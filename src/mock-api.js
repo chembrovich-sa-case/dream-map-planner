@@ -684,6 +684,21 @@ window.MockAPI = {
     });
   },
 
+  // GET /goals/{id} (UC-5: Детальный просмотр карточки цели)
+  async getGoalById(id) {
+    const goal = db.state.goals.find(g => g.id === id);
+    if (!goal) return null;
+    const sphere = db.state.spheres.find(s => s.id === goal.sphere_id);
+    return {
+      ...goal,
+      sphere_title: sphere ? sphere.title : "Без сферы",
+      sphere_color: sphere ? sphere.color : "#94a3b8",
+      sphere_icon: sphere ? sphere.icon : "circle",
+      steps_count: goal.steps.length,
+      completed_steps_count: goal.steps.filter(s => s.is_completed).length
+    };
+  },
+
   // POST /goals (UC-1: Создание карточки цели)
   async createGoal(goalData) {
     if (!goalData.title || !goalData.sphere_id) {

@@ -14,6 +14,7 @@ const appState = {
   fxRateData: null,
   currentUser: window.MockAPI ? window.MockAPI.getCurrentUser() : null,
   currentMode: 'dashboard',
+  activeGoalId: null,
   isDarkMode: localStorage.getItem('horizont_theme') === 'dark' || 
               (!('horizont_theme' in localStorage) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
 };
@@ -38,6 +39,35 @@ async function startApp() {
   applyRBAC();
   await initExchangeRate();
   await refreshAll();
+
+  // Роутинг по URL (Hash или Search Param: UC-5)
+  const hash = window.location.hash;
+  const urlParams = new URLSearchParams(window.location.search);
+  const goalIdParam = urlParams.get('goalId') || (hash.startsWith('#goal=') ? hash.replace('#goal=', '') : null);
+
+  if (goalIdParam) {
+    window.openGoalDetail(goalIdParam);
+  } else if (hash === '#cms') {
+    if (typeof window.setAppMode === 'function') window.setAppMode('cms');
+  }
+
+  window.addEventListener('hashchange', () => {
+    const currentHash = window.location.hash;
+    if (currentHash.startsWith('#goal=')) {
+      const gId = currentHash.replace('#goal=', '');
+      if (gId && gId !== appState.activeGoalId) {
+        window.openGoalDetail(gId);
+      }
+    } else if (currentHash === '#cms') {
+      if (appState.currentMode !== 'cms' && typeof window.setAppMode === 'function') {
+        window.setAppMode('cms');
+      }
+    } else if (currentHash === '' || currentHash === '#dashboard') {
+      if (appState.currentMode !== 'dashboard') {
+        window.closeGoalDetail();
+      }
+    }
+  });
 }
 
 if (document.readyState === 'loading') {
@@ -87,6 +117,9 @@ window.setAppCurrency = function(currency) {
   updateTotalGoalsBudget();
   if (typeof renderCMSGoals === 'function') {
     renderCMSGoals();
+  }
+  if (appState.currentMode === 'goal-detail' && appState.activeGoalId) {
+    renderGoalDetail(appState.activeGoalId);
   }
 };
 
@@ -251,12 +284,13 @@ function setupEventListeners() {
     });
   });
 
-  // Переключение режима «Дашборд / CMS Управление»
+  // Переключение режима «Дашборд / CMS Управление / Детальный просмотр цели»
   const modeDashboardBtn = document.getElementById('nav-mode-dashboard-btn');
   const modeCmsBtn = document.getElementById('nav-mode-cms-btn');
   const mobileModeToggleBtn = document.getElementById('mobile-mode-toggle-btn');
   const dashboardView = document.getElementById('dashboard-view');
   const cmsView = document.getElementById('cms-view');
+  const goalDetailView = document.getElementById('goal-detail-view');
 
   function setAppMode(mode) {
     if (mode === 'cms') {
@@ -269,6 +303,7 @@ function setupEventListeners() {
 
       appState.currentMode = 'cms';
       dashboardView.classList.add('hidden');
+      if (goalDetailView) goalDetailView.classList.add('hidden');
       cmsView.classList.remove('hidden');
 
       if (modeCmsBtn) {
@@ -281,9 +316,25 @@ function setupEventListeners() {
       }
       renderCMSSpheres();
       renderCMSGoals();
+    } else if (mode === 'goal-detail') {
+      appState.currentMode = 'goal-detail';
+      dashboardView.classList.add('hidden');
+      cmsView.classList.add('hidden');
+      if (goalDetailView) goalDetailView.classList.remove('hidden');
+
+      if (modeDashboardBtn) {
+        modeDashboardBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
+        modeDashboardBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
+      }
+      if (modeCmsBtn) {
+        modeCmsBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
+        modeCmsBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
+      }
     } else {
       appState.currentMode = 'dashboard';
+      appState.activeGoalId = null;
       cmsView.classList.add('hidden');
+      if (goalDetailView) goalDetailView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
 
       if (modeDashboardBtn) {
@@ -797,19 +848,20 @@ async function renderGoals() {
 
     // Компактные шаги чек-листа прямо внутри карточки
     const stepsHTML = goal.steps.map(step => `
-      <div class="flex items-center justify-between py-1 group/step">
+      <div class="flex items-center justify-between py-1 group/step" onclick="event.stopPropagation()">
         <label class="flex items-center gap-2 cursor-pointer min-w-0 flex-1">
           <input type="checkbox" 
                  class="material-checkbox" 
                  ${step.is_completed ? 'checked' : ''} 
-                 onchange="window.handleToggleStep('${goal.id}', '${step.id}')">
+                 onclick="event.stopPropagation()"
+                 onchange="event.stopPropagation(); window.handleToggleStep('${goal.id}', '${step.id}')">
           <span class="text-xs ${step.is_completed ? 'line-through text-[#9AA0A6] dark:text-[#64748B]' : 'text-[#202124] dark:text-[#F8FAFC]'} truncate transition-all">
             ${escapeHTML(step.title)}
           </span>
         </label>
         <div class="flex items-center gap-1.5 shrink-0 pl-1">
           ${step.weight > 1 ? `<span class="text-[9px] font-semibold px-1 rounded bg-[#F1F3F4] dark:bg-[#1F2937] text-[#5F6368]">в${step.weight}</span>` : ''}
-          <button onclick="window.handleDeleteStep('${goal.id}', '${step.id}')" 
+          <button onclick="event.stopPropagation(); window.handleDeleteStep('${goal.id}', '${step.id}')" 
                   title="Удалить шаг" 
                   class="opacity-0 group-hover/step:opacity-100 text-[#9AA0A6] hover:text-[#D93025] transition-opacity p-0.5">
             <i data-lucide="trash-2" class="w-3 h-3"></i>
@@ -819,12 +871,13 @@ async function renderGoals() {
     `).join('');
 
     return `
-      <div class="google-card overflow-hidden flex flex-col justify-between">
+      <div class="google-card overflow-hidden flex flex-col justify-between cursor-pointer group hover:border-[#1A73E8] transition-all"
+           onclick="window.openGoalDetail('${goal.id}')">
         <div>
           <!-- Иллюстрация 16:9 с бейджами -->
           <div class="relative w-full aspect-video bg-[#F1F3F4] dark:bg-[#1E293B] overflow-hidden">
             ${goal.image_url 
-              ? `<img src="${goal.image_url}" alt="${escapeHTML(goal.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy">` 
+              ? `<img src="${goal.image_url}" alt="${escapeHTML(goal.title)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">` 
               : `<div class="w-full h-full flex items-center justify-center text-[#5F6368]"><i data-lucide="image" class="w-8 h-8"></i></div>`
             }
             
@@ -841,7 +894,7 @@ async function renderGoals() {
               ${isAchieved ? `
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1E8E3E] text-white">Достигнуто</span>
               ` : ''}
-              <button onclick="window.handleDeleteGoal('${goal.id}')" 
+              <button onclick="event.stopPropagation(); window.handleDeleteGoal('${goal.id}')" 
                       class="p-1 rounded-full bg-black/40 hover:bg-[#D93025] text-white transition-all backdrop-blur-sm"
                       title="Удалить карточку">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -851,7 +904,7 @@ async function renderGoals() {
 
           <!-- Контент карточки -->
           <div class="p-5">
-            <h3 class="goal-card-title text-base font-semibold leading-snug line-clamp-2 mb-1.5">
+            <h3 class="goal-card-title text-base font-semibold leading-snug line-clamp-2 mb-1.5 group-hover:text-[#1A73E8] transition-colors">
               ${escapeHTML(goal.title)}
             </h3>
             
@@ -880,7 +933,7 @@ async function renderGoals() {
             <div class="border-t border-[#E8EAED] dark:border-[#1F2937] pt-2.5">
               <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#5F6368] dark:text-[#94A3B8] mb-1.5">
                 <span>Шаги (${goal.completed_steps_count}/${goal.steps_count})</span>
-                <button onclick="window.promptAddStep('${goal.id}')" 
+                <button onclick="event.stopPropagation(); window.promptAddStep('${goal.id}')" 
                         class="text-[#1A73E8] dark:text-[#60A5FA] hover:underline font-semibold flex items-center gap-0.5 normal-case">
                   <i data-lucide="plus" class="w-3 h-3"></i> шаг
                 </button>
@@ -894,13 +947,21 @@ async function renderGoals() {
           </div>
         </div>
 
-        <!-- Подвал карточки: статус и дедлайн -->
-        <div class="px-5 pb-4 pt-1 border-t border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between text-[11px] text-[#5F6368] dark:text-[#94A3B8]">
+        <!-- Подвал карточки: статус, дедлайн и кнопка Подробнее -->
+        <div class="px-5 pb-4 pt-2 border-t border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between text-[11px] text-[#5F6368] dark:text-[#94A3B8]">
           <span class="flex items-center gap-1">
             <i data-lucide="calendar" class="w-3 h-3"></i>
             ${deadlineText}
           </span>
-          ${priorityBadge}
+          <div class="flex items-center gap-2">
+            ${priorityBadge}
+            <button type="button" 
+                    onclick="event.stopPropagation(); window.openGoalDetail('${goal.id}')" 
+                    class="font-semibold text-[#1A73E8] dark:text-[#60A5FA] hover:underline flex items-center gap-0.5 ml-1">
+              <span>Подробнее</span>
+              <i data-lucide="chevron-right" class="w-3 h-3"></i>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -937,6 +998,392 @@ function formatDeadline(dateString) {
   if (diffDays < 30) return `${diffDays} дн.`;
   return date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
 }
+
+/**
+ * ============================================================================
+ * ДЕТАЛЬНЫЙ ПРОСМОТР ЦЕЛИ (Goal Detail View: UC-5)
+ * ============================================================================
+ */
+
+window.openGoalDetail = function(goalId) {
+  if (!goalId) return;
+  appState.activeGoalId = goalId;
+  window.location.hash = 'goal=' + goalId;
+  if (typeof window.setAppMode === 'function') {
+    window.setAppMode('goal-detail');
+  }
+  renderGoalDetail(goalId);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.closeGoalDetail = function(newHash = '') {
+  appState.activeGoalId = null;
+  window.location.hash = newHash;
+  if (typeof window.setAppMode === 'function') {
+    window.setAppMode('dashboard');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+async function renderGoalDetail(goalId) {
+  const container = document.getElementById('goal-detail-view');
+  if (!container) return;
+
+  const goal = await window.MockAPI.getGoalById(goalId);
+  if (!goal) {
+    container.innerHTML = `
+      <div class="google-card p-12 text-center max-w-lg mx-auto">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 flex items-center justify-center">
+          <i data-lucide="alert-circle" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold font-heading text-[#202124] dark:text-white">Цель не найдена</h2>
+        <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] mt-1 mb-6">Возможно, карточка была удалена или ссылка некорректна.</p>
+        <button onclick="window.closeGoalDetail()" class="google-btn-primary text-xs">
+          ← Вернуться к дашборду
+        </button>
+      </div>
+    `;
+    safeLucideIcons();
+    return;
+  }
+
+  const user = appState.currentUser || window.MockAPI.getCurrentUser();
+  const isAdmin = user && user.role === 'admin';
+  const isAchieved = goal.status === 'achieved';
+  const deadlineText = formatDeadline(goal.deadline);
+  const priorityBadge = getPriorityBadge(goal.priority);
+
+  // Форматирование бюджета в BYN и USD
+  const costByn = goal.currency === 'BYN' 
+    ? (goal.cost_amount || 0) 
+    : ((goal.cost_amount || 0) * (appState.fxRate || 2.9543));
+  const costUsd = goal.currency === 'USD' 
+    ? (goal.cost_amount || 0) 
+    : ((goal.cost_amount || 0) / (appState.fxRate || 2.9543));
+
+  const budgetDisplayFormatted = goal.cost_amount > 0 
+    ? `<span class="font-bold text-[#0D9488] dark:text-[#2DD4BF]">${Math.round(costByn).toLocaleString('ru-RU')} Br</span> <span class="text-[#5F6368] dark:text-[#94A3B8] font-normal text-xs">(~$${Math.round(costUsd).toLocaleString('en-US')} по курсу НБРБ)</span>`
+    : `<span class="text-[#9AA0A6] italic">Не указан (0 Br)</span>`;
+
+  // Генерация шагов чек-листа детального экрана
+  const stepsHTML = (goal.steps && goal.steps.length > 0)
+    ? goal.steps.map((step) => `
+      <div class="flex items-center justify-between p-3 rounded-xl border border-[#DADCE0] dark:border-[#374151] hover:border-[#1A73E8] dark:hover:border-[#3B82F6] hover:bg-[#F8F9FA] dark:hover:bg-[#1E293B]/50 transition-all group">
+        <label class="flex items-start gap-3 cursor-pointer min-w-0 flex-1">
+          <input type="checkbox" 
+                 class="material-checkbox mt-0.5" 
+                 ${step.is_completed ? 'checked' : ''} 
+                 onchange="window.handleToggleStepDetail('${goal.id}', '${step.id}')">
+          <div class="min-w-0 flex-1">
+            <span class="text-xs sm:text-sm font-medium ${step.is_completed ? 'line-through text-[#9AA0A6] dark:text-[#64748B]' : 'text-[#202124] dark:text-[#F8FAFC]'} leading-snug break-words">
+              ${escapeHTML(step.title)}
+            </span>
+            ${step.completed_at ? `
+              <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
+                Выполнено: ${new Date(step.completed_at).toLocaleDateString('ru-RU')}
+              </div>
+            ` : ''}
+          </div>
+        </label>
+        <div class="flex items-center gap-2 shrink-0 pl-2">
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#E8F0FE] text-[#1A73E8] dark:bg-blue-950/40 dark:text-blue-300">
+            Вес: ${step.weight || 1}
+          </span>
+          <button onclick="window.handleDeleteStepDetail('${goal.id}', '${step.id}')" 
+                  title="Удалить шаг" 
+                  class="opacity-60 group-hover:opacity-100 text-[#9AA0A6] hover:text-[#D93025] transition-opacity p-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `).join('')
+    : `
+      <div class="p-6 text-center border-2 border-dashed border-[#DADCE0] dark:border-[#374151] rounded-2xl text-xs text-[#5F6368] dark:text-[#94A3B8]">
+        Шаги декомпозиции еще не добавлены. Создайте первый шаг ниже!
+      </div>
+    `;
+
+  container.innerHTML = `
+    <!-- 1. ХЕДЕР ДЕТАЛЬНОЙ СТРАНИЦЫ: Кнопка Назад, Хлебные крошки и Действия -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <button type="button" 
+                onclick="window.closeGoalDetail()" 
+                class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold shrink-0">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>Дашборд</span>
+        </button>
+
+        <!-- Хлебные крошки -->
+        <nav class="flex items-center gap-1.5 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium flex-wrap">
+          <a href="#" onclick="window.closeGoalDetail(); return false;" class="hover:text-[#1A73E8] transition-colors">Главная</a>
+          <span>/</span>
+          <span class="inline-flex items-center gap-1 font-semibold" style="color: ${goal.sphere_color};">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${goal.sphere_color};"></span>
+            ${escapeHTML(goal.sphere_title)}
+          </span>
+          <span>/</span>
+          <span class="font-bold text-[#202124] dark:text-white truncate max-w-[200px] sm:max-w-xs">
+            ${escapeHTML(goal.title)}
+          </span>
+        </nav>
+      </div>
+
+      <!-- Действия над целью -->
+      <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+        ${isAdmin ? `
+          <button type="button" 
+                  onclick="window.openEditGoalModal('${goal.id}')" 
+                  class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#1A73E8] border-[#1A73E8]">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>Редактировать</span>
+          </button>
+        ` : ''}
+        <button type="button" 
+                onclick="window.handleDeleteGoalDetail('${goal.id}')" 
+                class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#D93025] hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-300 transition-all">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Удалить цель</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. ДВУХКОЛОНОЧНЫЙ МАКЕТ В СТИЛЕ GOOGLE MATERIAL DESIGN 3 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ЛЕВАЯ КОЛОНКА (7 из 12): Обложка 16:9, описание, бюджет и параметры -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- Крупная обложка 16:9 с оверлеями -->
+        <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1F3F4] dark:bg-[#1E293B] border border-[#DADCE0] dark:border-[#374151] shadow-sm">
+          ${goal.image_url 
+            ? `<img src="${goal.image_url}" alt="${escapeHTML(goal.title)}" class="w-full h-full object-cover">`
+            : `<div class="w-full h-full flex flex-col items-center justify-center text-[#5F6368] gap-2"><i data-lucide="image" class="w-10 h-10"></i><span class="text-xs">Иллюстрация не задана</span></div>`
+          }
+          
+          <!-- Бейдж сферы в левом углу -->
+          <div class="absolute top-3 left-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/95 dark:bg-[#111827]/95 text-[#202124] dark:text-white shadow-md backdrop-blur-sm">
+              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${goal.sphere_color};"></span>
+              ${escapeHTML(goal.sphere_title)}
+            </span>
+          </div>
+
+          <!-- Бейдж статуса в правом углу -->
+          <div class="absolute top-3 right-3 flex items-center gap-1.5">
+            ${isAchieved ? `
+              <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-[#1E8E3E] text-white shadow-md flex items-center gap-1">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Цель достигнута
+              </span>
+            ` : `
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#1A73E8] text-white shadow-md">
+                В процессе
+              </span>
+            `}
+          </div>
+        </div>
+
+        <!-- Карточка информации: Заголовок, описание и метаданные -->
+        <div class="google-card p-5 sm:p-7 space-y-5">
+          <div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-[#202124] dark:text-white font-heading leading-tight mb-2">
+              ${escapeHTML(goal.title)}
+            </h1>
+            <p class="text-xs sm:text-sm text-[#5F6368] dark:text-[#94A3B8] leading-relaxed whitespace-pre-line">
+              ${escapeHTML(goal.description || 'Для этой цели подробное текстовое описание пока не составлено.')}
+            </p>
+          </div>
+
+          <!-- Сетка ключевых атрибутов цели (4 плашки) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-[#E8EAED] dark:border-[#1F2937]">
+            <!-- Дедлайн -->
+            <div class="p-3 rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937]/60 border border-[#DADCE0] dark:border-[#374151] flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-[#1A73E8] dark:bg-blue-950/60 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] uppercase font-bold text-[#5F6368] dark:text-[#94A3B8]">Дедлайн цели</div>
+                <div class="text-xs font-bold text-[#202124] dark:text-white truncate">${deadlineText}</div>
+              </div>
+            </div>
+
+            <!-- Бюджет с курсом НБРБ -->
+            <div class="p-3 rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937]/60 border border-[#DADCE0] dark:border-[#374151] flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-[#0D9488] dark:bg-emerald-950/60 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <i data-lucide="wallet" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] uppercase font-bold text-[#5F6368] dark:text-[#94A3B8]">Финансовый бюджет</div>
+                <div class="text-xs font-bold font-mono text-[#202124] dark:text-white truncate">${budgetDisplayFormatted}</div>
+              </div>
+            </div>
+
+            <!-- Приоритет -->
+            <div class="p-3 rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937]/60 border border-[#DADCE0] dark:border-[#374151] flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <i data-lucide="flag" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] uppercase font-bold text-[#5F6368] dark:text-[#94A3B8]">Уровень важности</div>
+                <div class="text-xs font-bold text-[#202124] dark:text-white">${priorityBadge}</div>
+              </div>
+            </div>
+
+            <!-- Сфера жизни -->
+            <div class="p-3 rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937]/60 border border-[#DADCE0] dark:border-[#374151] flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white" style="background-color: ${goal.sphere_color};">
+                <i data-lucide="${goal.sphere_icon || 'compass'}" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] uppercase font-bold text-[#5F6368] dark:text-[#94A3B8]">Сфера баланса</div>
+                <div class="text-xs font-bold text-[#202124] dark:text-white truncate">${escapeHTML(goal.sphere_title)}</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ПРАВАЯ КОЛОНКА (5 из 12): Прогресс выполнения и Интерактивный Чек-лист -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Карточка прогресса цели -->
+        <div class="google-card p-5 sm:p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-[#5F6368] dark:text-[#94A3B8]">
+              Общий прогресс цели (UC-2)
+            </span>
+            <span class="text-3xl font-extrabold font-heading font-mono ${isAchieved ? 'text-[#1E8E3E]' : 'text-[#1A73E8] dark:text-[#60A5FA]'}">
+              ${goal.progress_percent}%
+            </span>
+          </div>
+
+          <div class="google-progress-track h-3 rounded-full bg-[#E8EAED] dark:bg-[#1F2937]">
+            <div class="google-progress-bar h-full rounded-full transition-all duration-500 ${isAchieved ? 'bg-[#1E8E3E]' : 'bg-gradient-to-r from-[#1A73E8] to-[#0D9488]'}" 
+                 style="width: ${goal.progress_percent}%;"></div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-[#5F6368] dark:text-[#94A3B8] pt-1">
+            <span>Выполнено: <strong>${goal.completed_steps_count}</strong> из <strong>${goal.steps_count}</strong> шагов</span>
+            <span class="text-[11px] font-semibold text-[#0D9488] dark:text-[#2DD4BF]">Влияет на радар баланса</span>
+          </div>
+        </div>
+
+        <!-- Карточка интерактивного чек-листа контрольных этапов -->
+        <div class="google-card p-5 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-[#202124] dark:text-white font-heading">
+                Чек-лист контрольных шагов
+              </h3>
+              <p class="text-[11px] text-[#5F6368] dark:text-[#94A3B8] mt-0.5">
+                Отмечайте выполненные этапы для пересчета колеса
+              </p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-xs font-mono font-bold text-[#5F6368]">
+              ${goal.completed_steps_count}/${goal.steps_count}
+            </span>
+          </div>
+
+          <!-- Список шагов -->
+          <div class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            ${stepsHTML}
+          </div>
+
+          <!-- Быстрое добавление нового шага (Инлайн-форма) -->
+          <form onsubmit="window.handleAddNewStepDetail(event, '${goal.id}')" class="pt-3 border-t border-[#E8EAED] dark:border-[#1F2937] space-y-2.5">
+            <div class="text-xs font-bold text-[#202124] dark:text-white flex items-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
+              <span>Добавить новый этап в чек-лист</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" 
+                     id="detail-new-step-title" 
+                     required 
+                     placeholder="Название шага (напр., Пройти собеседование)..." 
+                     class="flex-1 px-3 py-1.5 text-xs rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-[#202124] dark:text-white focus:outline-none focus:border-[#1A73E8] transition-all">
+              <select id="detail-new-step-weight" 
+                      class="px-2.5 py-1.5 text-xs rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-[#202124] dark:text-white focus:outline-none focus:border-[#1A73E8] transition-all shrink-0" 
+                      title="Вес шага (важность для прогресса)">
+                <option value="1">Вес: 1</option>
+                <option value="2">Вес: 2</option>
+                <option value="3">Вес: 3</option>
+                <option value="5">Вес: 5</option>
+              </select>
+            </div>
+            <button type="submit" 
+                    class="google-btn-primary w-full text-xs font-semibold py-1.5 flex items-center justify-center gap-1.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Добавить шаг в цель</span>
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  safeLucideIcons();
+}
+
+window.handleToggleStepDetail = async function(goalId, stepId) {
+  try {
+    const result = await window.MockAPI.toggleStep(goalId, stepId);
+    await renderGoalDetail(goalId);
+    if (result.celebration && typeof confetti === 'function') {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      showToast('🎉 Поздравляем! Цель выполнена на 100%!', 'celebration');
+    }
+    // Фоновое обновление дашборда и радарного колеса
+    renderRadarAndAnalytics();
+  } catch (e) {
+    showToast('Ошибка: ' + e.message, 'error');
+  }
+};
+
+window.handleDeleteStepDetail = async function(goalId, stepId) {
+  try {
+    await window.MockAPI.deleteStep(goalId, stepId);
+    showToast('Шаг удален из чек-листа', 'info');
+    await renderGoalDetail(goalId);
+    renderRadarAndAnalytics();
+  } catch (e) {
+    showToast('Ошибка удаления шага: ' + e.message, 'error');
+  }
+};
+
+window.handleAddNewStepDetail = async function(e, goalId) {
+  e.preventDefault();
+  const titleInput = document.getElementById('detail-new-step-title');
+  const weightSelect = document.getElementById('detail-new-step-weight');
+  if (!titleInput || !titleInput.value.trim()) return;
+
+  try {
+    const title = titleInput.value.trim();
+    const weight = parseInt(weightSelect ? weightSelect.value : 1, 10) || 1;
+    await window.MockAPI.addStep(goalId, title, weight);
+    titleInput.value = '';
+    showToast('Новый шаг добавлен!', 'success');
+    await renderGoalDetail(goalId);
+    renderRadarAndAnalytics();
+  } catch (err) {
+    showToast('Ошибка добавления шага: ' + err.message, 'error');
+  }
+};
+
+window.handleDeleteGoalDetail = async function(goalId) {
+  if (!confirm("Вы уверены, что хотите удалить эту цель?")) return;
+  try {
+    await window.MockAPI.deleteGoal(goalId);
+    showToast('Цель успешно удалена', 'info');
+    window.closeGoalDetail();
+  } catch (e) {
+    showToast('Ошибка удаления цели: ' + e.message, 'error');
+  }
+};
 
 /**
  * Обработка переключения шага чек-листа прямо на карточке (UC-2)
@@ -1125,7 +1572,10 @@ async function handleCreateGoalSubmit(e) {
     document.body.classList.remove('overflow-hidden');
 
     await refreshAll();
-    renderCMSGoals();
+    if (typeof renderCMSGoals === 'function') renderCMSGoals();
+    if (appState.currentMode === 'goal-detail' && appState.activeGoalId) {
+      renderGoalDetail(appState.activeGoalId);
+    }
   } catch (error) {
     showToast('Ошибка: ' + error.message, 'error');
   }
@@ -1541,6 +1991,11 @@ function applyRBAC() {
         window.setAppMode('dashboard');
       }
     }
+  }
+
+  // Обновление прав на экране детального просмотра цели (UC-5)
+  if (appState.currentMode === 'goal-detail' && appState.activeGoalId) {
+    renderGoalDetail(appState.activeGoalId);
   }
 
   safeLucideIcons();
