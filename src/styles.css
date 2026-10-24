@@ -366,3 +366,49 @@ h1, h2, h3, h4, .font-heading {
     transform: translateX(0);
   }
 }
+
+/* ============================================================================ */
+/* АДАПТИВНАЯ МОБИЛЬНАЯ ВЕРСТКА (Mobile First & Safe Bounds)                     */
+/* ============================================================================ */
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  /* Защита от выхода элементов за экран на смартфонах */
+  .google-card {
+    border-radius: 14px;
+  }
+
+  /* Компактные кнопки на смартфонах */
+  .google-btn-primary {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .google-btn-outlined {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* Адаптивный размер холста диаграммы */
+  #radarChartCanvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Сетка карточек с адаптивными отступами */
+  #goals-grid {
+    gap: 16px;
+  }
+
+  /* Модальные окна на мобильных экранах */
+  .modal-content {
+    border-radius: 16px;
+    margin: 12px;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+}

@@ -57,11 +57,16 @@ async function initExchangeRate() {
 
     const rateValEl = document.getElementById('nbrb-rate-val');
     const ratePillEl = document.getElementById('nbrb-rate-pill');
+    const switcherWrap = document.getElementById('currency-switcher-wrap');
+
     if (rateValEl) {
       rateValEl.textContent = Number(appState.fxRate).toFixed(4);
     }
     if (ratePillEl) {
       ratePillEl.title = `Официальный курс НБРБ на ${fx.rate_date || 'сегодня'}: 1 USD = ${appState.fxRate} BYN (${fx.source})`;
+    }
+    if (switcherWrap) {
+      switcherWrap.title = `Курс НБРБ (${fx.rate_date || 'сегодня'}): 1 USD = ${Number(appState.fxRate).toFixed(4)} BYN`;
     }
   } catch (e) {
     console.warn("Ошибка инициализации курса НБРБ:", e);

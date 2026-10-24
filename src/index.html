@@ -58,107 +58,100 @@
 <body class="bg-white dark:bg-[#0B0F19] text-[#202124] dark:text-[#F8FAFC] min-h-screen transition-colors duration-200">
 
   <!-- ============================================================================ -->
-  <!-- ВЕРХНИЙ ХЕДЕР В СТИЛЕ GOOGLE FOR DEVELOPERS (Высота 64px, плоский, компактный) -->
+  <!-- ВЕРХНИЙ ХЕДЕР В СТИЛЕ GOOGLE FOR DEVELOPERS (Адаптивный Flexbox, Mobile First) -->
   <!-- ============================================================================ -->
-  <header class="sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-[#E8EAED] dark:border-[#1F2937] h-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-[#E8EAED] dark:border-[#1F2937] transition-all">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
       
-      <!-- Логотип «Горизонт» с фирменным векторным знаком -->
-      <div class="flex items-center gap-3">
+      <!-- ЛЕВАЯ ЧАСТЬ: Логотип «ГОРИЗОНТ» и переключатель режимов «Дашборд / CMS» -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Логотип -->
         <a href="#" onclick="window.location.reload(); return false;" class="flex items-center gap-2 hover:opacity-95 transition-opacity" title="Горизонт — Карта желаний и баланс">
-          <img src="assets/favicon.svg" alt="Горизонт" class="w-8 h-8 rounded-xl shadow-sm">
+          <img src="assets/favicon.svg" alt="Горизонт" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-sm shrink-0">
           <div class="flex flex-col">
-            <span class="font-heading font-extrabold text-base tracking-tight text-[#202124] dark:text-white leading-none">ГОРИЗОНТ</span>
+            <span class="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#202124] dark:text-white leading-none">ГОРИЗОНТ</span>
             <span class="text-[9px] uppercase tracking-wider font-bold text-[#0D9488] dark:text-[#2DD4BF] leading-tight">Баланс &amp; Цели</span>
           </div>
         </a>
 
-        <!-- Переключатель режима «Дашборд / CMS Управление» (отображается только для роли admin) -->
-        <div id="header-nav-mode-container" class="hidden md:flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] ml-2">
+        <!-- Переключатель режима «Дашборд / CMS Управление» (аккуратный на всех экранах) -->
+        <div id="header-nav-mode-container" class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151]">
           <button id="nav-mode-dashboard-btn" 
-                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-semibold bg-[#1A73E8] text-white transition-all flex items-center gap-1.5 shadow-sm">
+                  class="nav-mode-btn px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-[#1A73E8] text-white transition-all flex items-center gap-1 sm:gap-1.5 shadow-sm"
+                  title="Визуальный дашборд и цели">
             <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-            <span>Дашборд</span>
+            <span class="hidden sm:inline">Дашборд</span>
           </button>
           <button id="nav-mode-cms-btn" 
-                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5">
+                  class="nav-mode-btn px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1 sm:gap-1.5"
+                  title="Панель CMS (Управление базой данных)">
             <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-            <span>CMS Управление</span>
+            <span class="hidden sm:inline">CMS</span>
           </button>
         </div>
       </div>
 
-      <!-- Поиск, валюта, курс НБРБ, профиль/RBAC, создание цели, сброс и тема -->
-      <div class="flex items-center gap-2 sm:gap-2.5">
-        <!-- Кнопка мобильного переключения Дашборд/CMS (только для admin) -->
-        <button id="mobile-mode-toggle-btn" 
-                class="md:hidden google-btn-outlined p-2 text-xs flex items-center gap-1"
-                title="Переключить Дашборд / CMS">
-          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-        </button>
+      <!-- ПРАВАЯ ЧАСТЬ: Поиск, компактный переключатель валюты (BYN/USD), профиль/RBAC, "+ Новая цель", тема и сброс -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+        
+        <!-- Скрытая кнопка мобильного переключения (для обратной совместимости JS) -->
+        <button id="mobile-mode-toggle-btn" class="hidden" title="Переключить Дашборд / CMS"></button>
 
-        <!-- Плашка официального курса НБРБ (кэш раз в день) -->
-        <div id="nbrb-rate-pill" 
-             class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-[11px] font-mono text-[#5F6368] dark:text-[#94A3B8]" 
-             title="Официальный курс Нацбанка РБ (автокэш раз в сутки)">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-          <span>USD/BYN: <strong id="nbrb-rate-val" class="text-[#202124] dark:text-white font-bold">2.9543</strong></span>
+        <!-- Поисковая строка (скрыта на маленьких экранах, разворачивается на десктопе) -->
+        <div class="relative hidden xl:block w-36 2xl:w-44">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" 
+                 id="global-search-input" 
+                 placeholder="Поиск целей..." 
+                 class="w-full pl-8 pr-3 py-1 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
         </div>
 
-        <!-- Переключатель валюты отображения: BYN | USD -->
-        <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold">
+        <!-- Компактный переключатель валюты отображения: BYN | USD (без текста курса) -->
+        <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold shrink-0" 
+             id="currency-switcher-wrap"
+             title="Переключение валюты: BYN / USD">
           <button id="currency-byn-btn" 
                   onclick="window.setAppCurrency('BYN')" 
-                  class="px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
-                  title="Отображать все суммы в белорусских рублях (BYN)">
+                  class="px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
+                  title="Отображать суммы в белорусских рублях (BYN)">
             BYN
           </button>
           <button id="currency-usd-btn" 
                   onclick="window.setAppCurrency('USD')" 
-                  class="px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
-                  title="Отображать суммы в долларах США (USD) по курсу НБРБ">
+                  class="px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
+                  title="Отображать суммы в долларах США (USD)">
             USD
           </button>
-        </div>
-
-        <!-- Поисковая строка -->
-        <div class="relative hidden 2xl:block w-40">
-          <i data-lucide="search" class="w-4 h-4 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" 
-                 id="global-search-input" 
-                 placeholder="Поиск..." 
-                 class="w-full pl-9 pr-3 py-1.5 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
         </div>
 
         <!-- Кнопка профиля и авторизации (RBAC: UC-4) -->
         <button id="auth-profile-btn" 
                 onclick="window.openAuthModal()" 
-                class="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs"
+                class="flex items-center gap-1 sm:gap-1.5 p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs shrink-0"
                 title="Авторизация и профиль (RBAC)">
           <img id="header-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-5 h-5 rounded-full object-cover">
-          <span id="header-user-name" class="hidden sm:inline font-bold text-[#202124] dark:text-white max-w-[85px] truncate">Алексей</span>
-          <span id="header-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
+          <span id="header-user-name" class="hidden md:inline font-bold text-[#202124] dark:text-white max-w-[80px] truncate">Алексей</span>
+          <span id="header-user-role-badge" class="hidden sm:inline px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
         </button>
 
         <!-- Кнопка "+ Новая цель" (UC-1) -->
-        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1.5 text-xs font-semibold">
-          <i data-lucide="plus" class="w-4 h-4"></i>
+        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1 sm:gap-1.5 text-xs font-semibold px-2.5 sm:px-3.5 py-1.5 rounded-full shrink-0">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Новая цель</span>
         </button>
 
-        <!-- Кнопка сброса к демо-данным -->
+        <!-- Кнопка сброса к демо-данным (компактная иконка) -->
         <button id="reset-demo-btn" 
-                class="google-btn-outlined p-2 text-xs flex items-center gap-1"
+                class="google-btn-outlined p-1.5 sm:p-2 text-xs flex items-center justify-center shrink-0"
                 title="Сбросить к исходным демо-данным">
-          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-          <span class="hidden lg:inline text-xs">Сброс</span>
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         </button>
 
         <!-- Переключатель темы (Dark / Light) -->
         <button id="theme-toggle-btn" 
-                class="google-btn-outlined p-2 text-xs"
+                class="google-btn-outlined p-1.5 sm:p-2 text-xs flex items-center justify-center shrink-0"
                 title="Переключить тему">
-          <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+          <i id="theme-icon" data-lucide="moon" class="w-3.5 h-3.5"></i>
         </button>
       </div>
 
@@ -168,13 +161,13 @@
   <!-- ============================================================================ -->
   <!-- 1. РЕЖИМ ВИЗУАЛЬНОГО ДАШБОРДА (По умолчанию) -->
   <!-- ============================================================================ -->
-  <main id="dashboard-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <main id="dashboard-view" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
     <!-- ДВУХКОЛОНОЧНЫЙ АНАЛИТИЧЕСКИЙ БЛОК -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
       
       <!-- Слева (7 колонок): Колесо баланса (радарная диаграмма) -->
-      <div class="lg:col-span-7 google-card p-5 sm:p-6 flex flex-col justify-between">
+      <div class="lg:col-span-7 google-card p-4 sm:p-6 flex flex-col justify-between">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
@@ -182,7 +175,7 @@
               Колесо жизненного баланса
             </h2>
           </div>
-          <div class="flex items-center gap-4 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium">
+          <div class="flex items-center gap-3 sm:gap-4 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium">
             <span class="flex items-center gap-1.5">
               <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
               Факт
@@ -194,7 +187,7 @@
           </div>
         </div>
 
-        <div class="relative w-full h-[300px] sm:h-[330px]">
+        <div class="relative w-full h-[270px] sm:h-[330px]">
           <canvas id="radarChartCanvas"></canvas>
         </div>
       </div>
@@ -203,7 +196,7 @@
       <div class="lg:col-span-5 flex flex-col gap-4">
         
         <!-- Индекс гармоничности -->
-        <div class="google-card p-5">
+        <div class="google-card p-4 sm:p-5">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-semibold text-[#5F6368] dark:text-[#94A3B8] uppercase tracking-wider">
               Индекс гармоничности
@@ -235,7 +228,7 @@
         </div>
 
         <!-- Текущие баллы по сферам (Сетка 2x3) -->
-        <div class="google-card p-5 flex-1 flex flex-col justify-between">
+        <div class="google-card p-4 sm:p-5 flex-1 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-[#5F6368] dark:text-[#94A3B8] font-heading">
               Текущие баллы по сферам
@@ -288,7 +281,7 @@
 
     <!-- СЕТКА КАРТОЧЕК ЦЕЛЕЙ -->
     <section>
-      <div id="goals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div id="goals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <!-- Карточки целей рендерятся динамически -->
       </div>
     </section>
@@ -298,12 +291,12 @@
   <!-- ============================================================================ -->
   <!-- 2. РЕЖИМ CMS АДМИН-ПАНЕЛИ (Скрыт по умолчанию) -->
   <!-- ============================================================================ -->
-  <main id="cms-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 hidden">
+  <main id="cms-view" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 hidden">
     
     <!-- Шапка CMS с переключателем 3 вкладок -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
       <div>
-        <h2 class="text-xl font-bold font-heading text-[#202124] dark:text-white flex items-center gap-2">
+        <h2 class="text-lg sm:text-xl font-bold font-heading text-[#202124] dark:text-white flex items-center gap-2">
           <i data-lucide="sliders" class="w-5 h-5 text-[#1A73E8]"></i>
           Панель администрирования данных (CMS)
         </h2>
@@ -312,8 +305,8 @@
         </p>
       </div>
 
-      <!-- Вкладки CMS -->
-      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937]">
+      <!-- Вкладки CMS (горизонтальный скролл без ползунка на смартфонах) -->
+      <div class="no-scrollbar flex items-center gap-1.5 p-1 rounded-xl bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] overflow-x-auto max-w-full shrink-0">
         <button id="cms-tab-spheres-btn" 
                 class="cms-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-sm transition-all flex items-center gap-1.5">
           <i data-lucide="layers" class="w-3.5 h-3.5"></i>
