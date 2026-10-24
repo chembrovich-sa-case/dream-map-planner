@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Горизонт — Карта желаний & Колесо баланса</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            google: {
+              blue: '#1A73E8',
+              'blue-hover': '#174EA6',
+              'blue-surface': '#E8F0FE',
+              dark: '#202124',
+              gray: '#5F6368',
+              border: '#DADCE0',
+              subtle: '#E8EAED',
+              light: '#F8F9FA',
+              green: '#1E8E3E',
+              red: '#D93025',
+              yellow: '#F9AB00',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Кастомные стили -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js для радарной диаграммы -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Canvas Confetti для празднования 100% цели -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+
+<body class="bg-white dark:bg-[#0B0F19] text-[#202124] dark:text-[#F8FAFC] min-h-screen transition-colors duration-200">
+
+  <!-- ============================================================================ -->
+  <!-- ВЕРХНИЙ ХЕДЕР В СТИЛЕ GOOGLE FOR DEVELOPERS (Высота 64px, плоский, компактный) -->
+  <!-- ============================================================================ -->
+  <header class="sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-[#E8EAED] dark:border-[#1F2937] h-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
+      
+      <!-- Логотип «Горизонт» с фирменным векторным знаком -->
+      <div class="flex items-center gap-3">
+        <a href="#" onclick="window.location.reload(); return false;" class="flex items-center gap-2 hover:opacity-95 transition-opacity" title="Горизонт — Карта желаний и баланс">
+          <img src="assets/favicon.svg" alt="Горизонт" class="w-8 h-8 rounded-xl shadow-sm">
+          <div class="flex flex-col">
+            <span class="font-heading font-extrabold text-base tracking-tight text-[#202124] dark:text-white leading-none">ГОРИЗОНТ</span>
+            <span class="text-[9px] uppercase tracking-wider font-bold text-[#0D9488] dark:text-[#2DD4BF] leading-tight">Баланс &amp; Цели</span>
+          </div>
+        </a>
+
+        <!-- Переключатель режима «Дашборд / CMS Управление» (отображается только для роли admin) -->
+        <div id="header-nav-mode-container" class="hidden md:flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] ml-2">
+          <button id="nav-mode-dashboard-btn" 
+                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-semibold bg-[#1A73E8] text-white transition-all flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+            <span>Дашборд</span>
+          </button>
+          <button id="nav-mode-cms-btn" 
+                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            <span>CMS Управление</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Поиск, валюта, курс НБРБ, профиль/RBAC, создание цели, сброс и тема -->
+      <div class="flex items-center gap-2 sm:gap-2.5">
+        <!-- Кнопка мобильного переключения Дашборд/CMS (только для admin) -->
+        <button id="mobile-mode-toggle-btn" 
+                class="md:hidden google-btn-outlined p-2 text-xs flex items-center gap-1"
+                title="Переключить Дашборд / CMS">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Плашка официального курса НБРБ (кэш раз в день) -->
+        <div id="nbrb-rate-pill" 
+             class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-[11px] font-mono text-[#5F6368] dark:text-[#94A3B8]" 
+             title="Официальный курс Нацбанка РБ (автокэш раз в сутки)">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+          <span>USD/BYN: <strong id="nbrb-rate-val" class="text-[#202124] dark:text-white font-bold">2.9543</strong></span>
+        </div>
+
+        <!-- Переключатель валюты отображения: BYN | USD -->
+        <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold">
+          <button id="currency-byn-btn" 
+                  onclick="window.setAppCurrency('BYN')" 
+                  class="px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
+                  title="Отображать все суммы в белорусских рублях (BYN)">
+            BYN
+          </button>
+          <button id="currency-usd-btn" 
+                  onclick="window.setAppCurrency('USD')" 
+                  class="px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
+                  title="Отображать суммы в долларах США (USD) по курсу НБРБ">
+            USD
+          </button>
+        </div>
+
+        <!-- Поисковая строка -->
+        <div class="relative hidden 2xl:block w-40">
+          <i data-lucide="search" class="w-4 h-4 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" 
+                 id="global-search-input" 
+                 placeholder="Поиск..." 
+                 class="w-full pl-9 pr-3 py-1.5 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
+        </div>
+
+        <!-- Кнопка профиля и авторизации (RBAC: UC-4) -->
+        <button id="auth-profile-btn" 
+                onclick="window.openAuthModal()" 
+                class="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs"
+                title="Авторизация и профиль (RBAC)">
+          <img id="header-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-5 h-5 rounded-full object-cover">
+          <span id="header-user-name" class="hidden sm:inline font-bold text-[#202124] dark:text-white max-w-[85px] truncate">Алексей</span>
+          <span id="header-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
+        </button>
+
+        <!-- Кнопка "+ Новая цель" (UC-1) -->
+        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1.5 text-xs font-semibold">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Новая цель</span>
+        </button>
+
+        <!-- Кнопка сброса к демо-данным -->
+        <button id="reset-demo-btn" 
+                class="google-btn-outlined p-2 text-xs flex items-center gap-1"
+                title="Сбросить к исходным демо-данным">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          <span class="hidden lg:inline text-xs">Сброс</span>
+        </button>
+
+        <!-- Переключатель темы (Dark / Light) -->
+        <button id="theme-toggle-btn" 
+                class="google-btn-outlined p-2 text-xs"
+                title="Переключить тему">
+          <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ============================================================================ -->
+  <!-- 1. РЕЖИМ ВИЗУАЛЬНОГО ДАШБОРДА (По умолчанию) -->
+  <!-- ============================================================================ -->
+  <main id="dashboard-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ДВУХКОЛОНОЧНЫЙ АНАЛИТИЧЕСКИЙ БЛОК -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      
+      <!-- Слева (7 колонок): Колесо баланса (радарная диаграмма) -->
+      <div class="lg:col-span-7 google-card p-5 sm:p-6 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
+            <h2 class="text-base font-bold text-[#202124] dark:text-white font-heading">
+              Колесо жизненного баланса
+            </h2>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
+              Факт
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full border border-dashed border-[#9AA0A6]"></span>
+              Цель (10)
+            </span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-[300px] sm:h-[330px]">
+          <canvas id="radarChartCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Справа (5 колонок): Индекс гармонии + Сетка 2x3 сфер -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- Индекс гармоничности -->
+        <div class="google-card p-5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-[#5F6368] dark:text-[#94A3B8] uppercase tracking-wider">
+              Индекс гармоничности
+            </span>
+            <span id="harmony-index-value" class="text-3xl font-extrabold font-heading text-[#1A73E8] dark:text-[#60A5FA]">
+              --%
+            </span>
+          </div>
+
+          <div class="w-full bg-[#E8EAED] dark:bg-[#1F2937] h-2 rounded-full overflow-hidden mb-2">
+            <div id="harmony-index-progress" 
+                 class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500" 
+                 style="width: 0%;"></div>
+          </div>
+          <p id="harmony-index-desc" class="text-xs text-[#5F6368] dark:text-[#94A3B8]">
+            Расчет баланса между жизненными сферами...
+          </p>
+
+          <!-- Общий бюджет целей с автопересчетом валюты -->
+          <div class="mt-3 pt-3 border-t border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between text-xs">
+            <span class="text-[#5F6368] dark:text-[#94A3B8] flex items-center gap-1.5 font-medium">
+              <i data-lucide="wallet" class="w-3.5 h-3.5 text-[#0D9488]"></i>
+              Общий бюджет целей:
+            </span>
+            <span id="total-goals-budget" class="font-mono font-bold text-xs text-[#202124] dark:text-white">
+              -- BYN
+            </span>
+          </div>
+        </div>
+
+        <!-- Текущие баллы по сферам (Сетка 2x3) -->
+        <div class="google-card p-5 flex-1 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[#5F6368] dark:text-[#94A3B8] font-heading">
+              Текущие баллы по сферам
+            </h3>
+            <span class="text-[11px] text-[#5F6368] dark:text-[#94A3B8]">Клик для фильтра</span>
+          </div>
+
+          <div id="spheres-mini-grid" class="grid grid-cols-2 gap-2.5">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- СТРОКА ФИЛЬТРАЦИИ (Без видимой серой полосы прокрутки .no-scrollbar) -->
+    <section class="space-y-3">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        
+        <!-- Чипс-меню сфер жизни (с классом no-scrollbar) -->
+        <div id="spheres-filter-container" class="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+          <!-- Заполняется динамически -->
+        </div>
+
+        <!-- Переключатель статуса целей -->
+        <div class="flex items-center gap-1 p-1 rounded-full bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] shrink-0 self-start md:self-auto">
+          <button data-status="all" 
+                  class="status-filter-btn px-3.5 py-1 rounded-full text-xs font-semibold bg-[#1A73E8] text-white transition-all">
+            Все
+          </button>
+          <button data-status="in_progress" 
+                  class="status-filter-btn px-3.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all">
+            В работе
+          </button>
+          <button data-status="achieved" 
+                  class="status-filter-btn px-3.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all">
+            Достигнуто
+          </button>
+        </div>
+
+      </div>
+
+      <div class="flex items-center justify-between px-1 text-xs text-[#5F6368] dark:text-[#94A3B8]">
+        <span id="goals-count-badge" class="font-medium">Загрузка целей...</span>
+        <span class="hidden sm:inline">
+          💡 Отмечайте шаги прямо на карточке для мгновенного пересчета колеса баланса (UC-2)
+        </span>
+      </div>
+    </section>
+
+    <!-- СЕТКА КАРТОЧЕК ЦЕЛЕЙ -->
+    <section>
+      <div id="goals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Карточки целей рендерятся динамически -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================================ -->
+  <!-- 2. РЕЖИМ CMS АДМИН-ПАНЕЛИ (Скрыт по умолчанию) -->
+  <!-- ============================================================================ -->
+  <main id="cms-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 hidden">
+    
+    <!-- Шапка CMS с переключателем 3 вкладок -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
+      <div>
+        <h2 class="text-xl font-bold font-heading text-[#202124] dark:text-white flex items-center gap-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-[#1A73E8]"></i>
+          Панель администрирования данных (CMS)
+        </h2>
+        <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] mt-0.5">
+          Полное управление справочниками сфер, реестром целей, шагами и бэкапом базы данных
+        </p>
+      </div>
+
+      <!-- Вкладки CMS -->
+      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937]">
+        <button id="cms-tab-spheres-btn" 
+                class="cms-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-sm transition-all flex items-center gap-1.5">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+          <span>Сферы жизни</span>
+        </button>
+        <button id="cms-tab-goals-btn" 
+                class="cms-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5">
+          <i data-lucide="list-todo" class="w-3.5 h-3.5"></i>
+          <span>Реестр целей (CRUD)</span>
+        </button>
+        <button id="cms-tab-database-btn" 
+                class="cms-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5">
+          <i data-lucide="database" class="w-3.5 h-3.5"></i>
+          <span>База данных & Бэкап</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА 1: УПРАВЛЕНИЕ СФЕРАМИ ЖИЗНИ -->
+    <section id="cms-tab-spheres-content" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-[#202124] dark:text-white font-heading uppercase tracking-wider">
+          Справочник сфер жизненного баланса
+        </h3>
+        <button id="cms-open-create-sphere-btn" class="google-btn-primary text-xs flex items-center gap-1.5 py-1.5">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>+ Добавить сферу</span>
+        </button>
+      </div>
+
+      <!-- Таблица сфер -->
+      <div class="google-card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="google-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Цвет</th>
+                <th>Название сферы</th>
+                <th>Описание</th>
+                <th style="width: 120px;">Целевой балл</th>
+                <th style="width: 120px;">Текущий балл</th>
+                <th style="width: 110px;">Целей в сфере</th>
+                <th style="width: 140px; text-align: right;">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="cms-spheres-table-body">
+              <!-- Заполняется динамически -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА 2: РЕЕСТР ЦЕЛЕЙ И ЧЕК-ЛИСТОВ (CRUD) -->
+    <section id="cms-tab-goals-content" class="space-y-4 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h3 class="text-sm font-bold text-[#202124] dark:text-white font-heading uppercase tracking-wider">
+          Реестр карточек целей и шагов
+        </h3>
+
+        <!-- Фильтры статуса в CMS (включая черновики и архив) -->
+        <div class="flex items-center gap-2">
+          <select id="cms-goals-status-filter" class="px-3 py-1.5 text-xs rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#111827] text-[#202124] dark:text-white outline-none">
+            <option value="all">Все статусы</option>
+            <option value="in_progress">В работе (in_progress)</option>
+            <option value="achieved">Достигнуто (achieved)</option>
+            <option value="draft">Черновик (draft)</option>
+            <option value="archived">В архиве (archived)</option>
+          </select>
+          <button onclick="window.openCreateGoalModal()" class="google-btn-primary text-xs flex items-center gap-1.5 py-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Создать цель</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Таблица целей -->
+      <div class="google-card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="google-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">Фото</th>
+                <th>Название цели</th>
+                <th>Сфера жизни</th>
+                <th>Приоритет</th>
+                <th>Статус</th>
+                <th>Прогресс</th>
+                <th>Дедлайн</th>
+                <th>Бюджет</th>
+                <th style="width: 120px; text-align: right;">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="cms-goals-table-body">
+              <!-- Заполняется динамически -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА 3: БАЗА ДАННЫХ И БЭКАП (JSON / SQL Export & Import) -->
+    <section id="cms-tab-database-content" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Карточка 1: Экспорт в JSON -->
+        <div class="google-card p-6 flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-[#E8F0FE] dark:bg-blue-950/50 text-[#1A73E8] flex items-center justify-center mb-4">
+              <i data-lucide="download" class="w-5 h-5"></i>
+            </div>
+            <h4 class="text-base font-bold font-heading text-[#202124] dark:text-white mb-1.5">
+              Экспорт всей базы в JSON
+            </h4>
+            <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] leading-relaxed mb-6">
+              Скачать полный резервный слепок базы данных (сферы жизни, карточки целей, чек-листы и прогресс) в формате JSON-файла для локального сохранения.
+            </p>
+          </div>
+          <button id="cms-export-json-btn" class="google-btn-primary text-xs flex items-center justify-center gap-2 w-full py-2.5">
+            <i data-lucide="file-json" class="w-4 h-4"></i>
+            <span>Скачать backup (JSON)</span>
+          </button>
+        </div>
+
+        <!-- Карточка 2: Импорт из JSON -->
+        <div class="google-card p-6 flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-[#1E8E3E] flex items-center justify-center mb-4">
+              <i data-lucide="upload" class="w-5 h-5"></i>
+            </div>
+            <h4 class="text-base font-bold font-heading text-[#202124] dark:text-white mb-1.5">
+              Импорт и восстановление из JSON
+            </h4>
+            <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] leading-relaxed mb-6">
+              Загрузите ранее сохраненный JSON-файл для мгновенного восстановления всех данных проекта в localStorage.
+            </p>
+          </div>
+          <div>
+            <input type="file" id="cms-import-file-input" accept=".json,application/json" class="hidden">
+            <button id="cms-trigger-import-btn" class="google-btn-outlined text-xs flex items-center justify-center gap-2 w-full py-2.5 border-[#1E8E3E] text-[#1E8E3E] hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+              <i data-lucide="folder-open" class="w-4 h-4"></i>
+              <span>Выбрать файл JSON и применить</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Карточка 3: Генератор SQL INSERT для PostgreSQL -->
+      <div class="google-card p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h4 class="text-base font-bold font-heading text-[#202124] dark:text-white flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-[#1A73E8]"></i>
+              Генератор SQL INSERT (PostgreSQL 14+)
+            </h4>
+            <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] mt-0.5">
+              Формирует готовый скрипт миграции для переноса текущего состояния в production-базу
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="cms-generate-sql-btn" class="google-btn-outlined text-xs flex items-center gap-1.5 py-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Сгенерировать SQL</span>
+            </button>
+            <button id="cms-copy-sql-btn" class="google-btn-primary text-xs flex items-center gap-1.5 py-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Копировать в буфер</span>
+            </button>
+          </div>
+        </div>
+
+        <textarea id="cms-sql-output" 
+                  readonly 
+                  rows="10" 
+                  placeholder="Нажмите «Сгенерировать SQL», чтобы получить исполняемый блок запросов INSERT..."
+                  class="w-full p-4 rounded-xl font-mono text-xs bg-[#F8F9FA] dark:bg-[#0B0F19] text-[#202124] dark:text-[#94A3B8] border border-[#DADCE0] dark:border-[#1F2937] outline-none leading-relaxed"></textarea>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ============================================================================ -->
+  <!-- МОДАЛЬНОЕ ОКНО CMS: СОЗДАНИЕ / РЕДАКТИРОВАНИЕ СФЕРЫ ЖИЗНИ -->
+  <!-- ============================================================================ -->
+  <div id="sphere-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay hidden">
+    <div class="bg-white dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] modal-content w-full max-w-lg overflow-hidden flex flex-col">
+      <div class="px-6 py-4 border-b border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between">
+        <h3 id="sphere-modal-title" class="text-base font-bold text-[#202124] dark:text-white font-heading">
+          Сфера жизни
+        </h3>
+        <button id="close-sphere-modal" class="text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="sphere-form" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="sphere-id-input">
+
+        <div>
+          <label class="block font-semibold text-[#202124] dark:text-white mb-1">Название сферы *</label>
+          <input type="text" id="sphere-title-input" required placeholder="Например: Духовность и медитация"
+                 class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#202124] dark:text-white mb-1">Описание сферы</label>
+          <textarea id="sphere-desc-input" rows="2" placeholder="Краткая суть сферы и ценностей..."
+                    class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">Цвет сферы (HEX)</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="sphere-color-picker" value="#3B82F6" class="w-9 h-9 p-0.5 rounded-lg border border-[#DADCE0] cursor-pointer">
+              <input type="text" id="sphere-color-text" value="#3B82F6" class="flex-1 px-3 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white font-mono uppercase text-xs">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">Иконка (Lucide)</label>
+            <select id="sphere-icon-select" class="w-full px-3 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white outline-none">
+              <option value="briefcase">briefcase (Портфель)</option>
+              <option value="wallet">wallet (Кошелек)</option>
+              <option value="heart-pulse">heart-pulse (Сердце)</option>
+              <option value="users">users (Семья)</option>
+              <option value="book-open">book-open (Книга)</option>
+              <option value="plane">plane (Самолет)</option>
+              <option value="sparkles">sparkles (Творчество)</option>
+              <option value="star">star (Звезда)</option>
+              <option value="sun">sun (Энергия)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">Целевой балл (1-10)</label>
+            <input type="number" id="sphere-target-input" min="1" max="10" step="0.5" value="10" required
+                   class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">Текущий балл</label>
+            <input type="number" id="sphere-current-input" min="0" max="10" step="0.1" value="0"
+                   class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white outline-none">
+          </div>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end gap-2 border-t border-[#E8EAED] dark:border-[#1F2937]">
+          <button type="button" id="cancel-sphere-modal" class="google-btn-outlined text-xs">Отмена</button>
+          <button type="submit" class="google-btn-primary text-xs flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Сохранить сферу</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================================ -->
+  <!-- МОДАЛЬНОЕ ОКНО: «+ НОВАЯ ЦЕЛЬ» / РЕДАКТИРОВАНИЕ ЦЕЛИ (UC-1) -->
+  <!-- ============================================================================ -->
+  <div id="goal-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay hidden">
+    <div class="bg-white dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] modal-content w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+      
+      <div class="px-6 py-4 border-b border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between">
+        <div>
+          <h3 id="goal-modal-heading" class="text-base font-bold text-[#202124] dark:text-white font-heading">
+            Новая цель на Карту желаний
+          </h3>
+          <p class="text-xs text-[#5F6368] dark:text-[#94A3B8]">
+            Сформулируйте цель, привяжите к сфере и разбейте на шаги
+          </p>
+        </div>
+        <button id="close-goal-modal" class="text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="goal-form" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+        <input type="hidden" id="edit-goal-id">
+
+        <div>
+          <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+            Название цели / желания *
+          </label>
+          <input type="text" 
+                 id="goal-title" 
+                 required 
+                 minlength="3" 
+                 maxlength="150"
+                 placeholder="Например: Пробежать первый полумарафон (21.1 км)"
+                 class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              Сфера жизни *
+            </label>
+            <select id="goal-sphere-select" 
+                    required
+                    class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              Приоритет
+            </label>
+            <select id="goal-priority" 
+                    class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+              <option value="medium">Средний (вес 2)</option>
+              <option value="high">Высокий (вес 3)</option>
+              <option value="critical">Критический (вес 4)</option>
+              <option value="low">Низкий (вес 1)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              Дедлайн
+            </label>
+            <input type="date" 
+                   id="goal-deadline" 
+                   class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              Статус цели
+            </label>
+            <select id="goal-status-select" 
+                    class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+              <option value="in_progress">В работе (in_progress)</option>
+              <option value="achieved">Достигнуто (achieved)</option>
+              <option value="draft">Черновик (draft)</option>
+              <option value="archived">В архиве (archived)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              Целевой бюджет / Стоимость
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="number" 
+                     id="goal-cost-amount" 
+                     min="0" 
+                     step="1" 
+                     placeholder="0" 
+                     class="flex-1 px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none font-mono">
+              <select id="goal-currency" 
+                      class="w-24 px-3 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white font-bold outline-none">
+                <option value="BYN">BYN</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+              URL иллюстрации
+            </label>
+            <input type="url" 
+                   id="goal-image-url" 
+                   placeholder="https://images.unsplash.com/..."
+                   class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none">
+          </div>
+        </div>
+
+        <!-- Пресеты фото -->
+        <div>
+          <span class="text-[11px] text-[#5F6368] dark:text-[#94A3B8] block mb-1.5 font-medium">Пресеты обложек:</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" data-url="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80" class="image-preset-btn px-2.5 py-1 rounded-lg border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F8F9FA] dark:hover:bg-[#1F2937]">🏃 Спорт</button>
+            <button type="button" data-url="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" class="image-preset-btn px-2.5 py-1 rounded-lg border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F8F9FA] dark:hover:bg-[#1F2937]">🏔️ Путешествия</button>
+            <button type="button" data-url="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80" class="image-preset-btn px-2.5 py-1 rounded-lg border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F8F9FA] dark:hover:bg-[#1F2937]">💼 Карьера</button>
+            <button type="button" data-url="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80" class="image-preset-btn px-2.5 py-1 rounded-lg border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F8F9FA] dark:hover:bg-[#1F2937]">💰 Финансы</button>
+            <button type="button" data-url="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80" class="image-preset-btn px-2.5 py-1 rounded-lg border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F8F9FA] dark:hover:bg-[#1F2937]">📚 Книги</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#202124] dark:text-white mb-1">
+            Описание цели и мотивация
+          </label>
+          <textarea id="goal-desc" 
+                    rows="2"
+                    placeholder="Зачем мне эта цель..."
+                    class="w-full px-3.5 py-2 rounded-xl border border-[#DADCE0] dark:border-[#374151] bg-white dark:bg-[#1F2937] text-[#202124] dark:text-white focus:border-[#1A73E8] outline-none"></textarea>
+        </div>
+
+        <!-- Шаги декомпозиции -->
+        <div class="border-t border-[#E8EAED] dark:border-[#1F2937] pt-3">
+          <div class="flex items-center justify-between mb-2">
+            <label class="font-semibold text-[#202124] dark:text-white">
+              Шаги чек-листа
+            </label>
+            <button type="button" 
+                    id="modal-add-step-btn"
+                    class="text-[#1A73E8] dark:text-[#60A5FA] hover:underline font-semibold flex items-center gap-1">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+              Добавить шаг
+            </button>
+          </div>
+          <div id="modal-steps-container" class="space-y-2"></div>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end gap-2 border-t border-[#E8EAED] dark:border-[#1F2937]">
+          <button type="button" id="cancel-goal-modal" class="google-btn-outlined text-xs">
+            Отмена
+          </button>
+          <button type="submit" class="google-btn-primary text-xs flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Сохранить цель</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================================ -->
+  <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ И СМЕНЫ АККАУНТА (RBAC: UC-4) -->
+  <!-- ============================================================================ -->
+  <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay hidden">
+    <div class="bg-white dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] modal-content w-full max-w-md overflow-hidden flex flex-col rounded-2xl shadow-xl">
+      <div class="px-6 py-4 border-b border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#E8F0FE] dark:bg-blue-950/60 text-[#1A73E8] flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[#202124] dark:text-white font-heading">
+              Авторизация в системе
+            </h3>
+            <span class="text-[10px] text-[#5F6368] dark:text-[#94A3B8]">Ролевая модель доступа (RBAC)</span>
+          </div>
+        </div>
+        <button onclick="window.closeAuthModal()" class="text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Карточка активного профиля -->
+        <div class="p-3.5 rounded-xl bg-[#F8F9FA] dark:bg-[#1F2937] border border-[#E8EAED] dark:border-[#374151] flex items-center gap-3">
+          <img id="auth-modal-user-avatar" src="" alt="Avatar" class="w-11 h-11 rounded-full object-cover shrink-0 border border-white dark:border-[#111827] shadow-sm">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+              <h4 id="auth-modal-user-name" class="text-xs font-bold text-[#202124] dark:text-white truncate">--</h4>
+              <span id="auth-modal-user-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider">--</span>
+            </div>
+            <p id="auth-modal-user-email" class="text-[#5F6368] dark:text-[#94A3B8] truncate font-mono text-[11px]">--</p>
+          </div>
+        </div>
+
+        <!-- Описание привилегий роли -->
+        <div id="auth-modal-permissions-hint" class="text-[11px] leading-relaxed p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 text-[#1A73E8] dark:text-[#93C5FD]">
+          <!-- Заполняется динамически -->
+        </div>
+
+        <!-- Переключатель демо-аккаунтов в 1 клик -->
+        <div>
+          <label class="block font-bold text-[#5F6368] dark:text-[#94A3B8] uppercase tracking-wider text-[10px] mb-2">
+            Быстрый вход в демо-аккаунты:
+          </label>
+
+          <div class="space-y-2">
+            <!-- Администратор -->
+            <button type="button" 
+                    onclick="window.switchDemoUser('admin@horizon.app')"
+                    class="w-full p-3 rounded-xl border border-[#DADCE0] dark:border-[#374151] hover:border-[#10B981] hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-left group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+                <div>
+                  <div class="font-bold text-[#202124] dark:text-white text-xs flex items-center gap-1.5">
+                    <span>Алексей Администраторов</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
+                  </div>
+                  <div class="text-[11px] text-[#5F6368] dark:text-[#94A3B8] font-mono">admin@horizon.app</div>
+                </div>
+              </div>
+              <span class="text-[11px] font-bold text-[#10B981] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                Выбрать <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </span>
+            </button>
+
+            <!-- Обычный пользователь -->
+            <button type="button" 
+                    onclick="window.switchDemoUser('user@horizon.app')"
+                    class="w-full p-3 rounded-xl border border-[#DADCE0] dark:border-[#374151] hover:border-[#1A73E8] hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all flex items-center justify-between text-left group">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
+                <div>
+                  <div class="font-bold text-[#202124] dark:text-white text-xs flex items-center gap-1.5">
+                    <span>Иван Горизонтов</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">User</span>
+                  </div>
+                  <div class="text-[11px] text-[#5F6368] dark:text-[#94A3B8] font-mono">user@horizon.app</div>
+                </div>
+              </div>
+              <span class="text-[11px] font-bold text-[#1A73E8] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                Выбрать <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Подвал модалки: Выход -->
+        <div class="pt-3 border-t border-[#E8EAED] dark:border-[#1F2937] flex items-center justify-between">
+          <button type="button" onclick="window.logoutUserSession()" class="text-[#D93025] hover:underline font-semibold flex items-center gap-1.5 py-1">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Выйти из аккаунта</span>
+          </button>
+          <button type="button" onclick="window.closeAuthModal()" class="google-btn-outlined text-xs py-1.5 px-3">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контейнер Toast уведомлений -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm pointer-events-none [&>*]:pointer-events-auto"></div>
+
+  <!-- Классические скрипты для прямой работы через file:// -->
+  <script src="mock-api.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<mxfile host="app.diagrams.net" modified="2026-10-24T17:15:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="er-concept-horizont" name="ER-Концепт Горизонт">
+    <mxGraphModel dx="1422" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1360" pageHeight="860" math="0" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Заголовок диаграммы -->
+        <mxCell id="title_banner" value="&lt;div style=&quot;font-size: 18px; font-weight: bold; color: #0F172A;&quot;&gt;ПРОЕКТ «ГОРИЗОНТ» (dream-map-planner)&lt;/div&gt;&lt;div style=&quot;font-size: 12px; color: #475569; margin-top: 4px;&quot;&gt;Концептуальная модель сущностей (ER-Диаграмма / Domain Entity Model)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;align=center;verticalAlign=middle;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="25" width="1240" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- 1. Сущность: Пользователь (users) -->
+        <mxCell id="ent_user" value="&lt;div style=&quot;background-color:#1E293B;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;users (Пользователь)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; email: VARCHAR(255) [UQ]&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; password_hash: VARCHAR(255)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; name: VARCHAR(100)&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;avatar_url: TEXT&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; created_at: TIMESTAMPTZ&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; updated_at: TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="290" height="210" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Сущность: Сфера жизни (life_spheres) -->
+        <mxCell id="ent_sphere" value="&lt;div style=&quot;background-color:#0F766E;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;life_spheres (Сфера жизни)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; user_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; title: VARCHAR(100)&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;description: TEXT&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; color: VARCHAR(7) &lt;span style=&quot;color:#64748B;&quot;&gt;/* #HEX */&lt;/span&gt;&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; icon: VARCHAR(50)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; target_score: NUMERIC(3,1)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; current_score: NUMERIC(3,1)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; sort_order: INT&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; created_at: TIMESTAMPTZ&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; updated_at: TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="510" y="110" width="310" height="270" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Сущность: Карточка цели/желания (goal_cards) -->
+        <mxCell id="ent_goal" value="&lt;div style=&quot;background-color:#4338CA;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;goal_cards (Карточка цели/желания)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; user_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; sphere_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; title: VARCHAR(150)&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;description: TEXT&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;image_url: TEXT&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;deadline: DATE&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; priority: VARCHAR(20)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; status: VARCHAR(20)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; progress_percent: INT (0..100)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; created_at: TIMESTAMPTZ&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;completed_at: TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#4338CA;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="510" y="470" width="310" height="290" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Сущность: Шаг чек-листа (goal_steps) -->
+        <mxCell id="ent_step" value="&lt;div style=&quot;background-color:#B45309;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;goal_steps (Шаг чек-листа)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; goal_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; title: VARCHAR(255)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; is_completed: BOOLEAN&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; sort_order: INT&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; weight: INT [DEFAULT 1]&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; created_at: TIMESTAMPTZ&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;completed_at: TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#B45309;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="60" y="505" width="290" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- 5. Сущность: История замеров баланса (balance_snapshots) -->
+        <mxCell id="ent_snapshot" value="&lt;div style=&quot;background-color:#0369A1;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;balance_snapshots (Замер баланса)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; user_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; recorded_at: TIMESTAMPTZ&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;overall_harmony_index: NUMERIC(3,2)&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;notes: TEXT&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; created_at: TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#0369A1;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="970" y="110" width="300" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- 6. Сущность: Показатели сфер в замере (balance_snapshot_items) -->
+        <mxCell id="ent_snapshot_item" value="&lt;div style=&quot;background-color:#0E7490;color:#FFFFFF;padding:8px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;balance_snapshot_items (Балл сферы)&lt;/div&gt;&lt;div style=&quot;padding:8px;text-align:left;font-family:Consolas,monospace;font-size:11px;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; snapshot_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; sphere_id: UUID&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; score: NUMERIC(3,1)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt;&amp;nbsp; target_score: NUMERIC(3,1)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#0E7490;strokeWidth=2;shadow=1;arcSize=4;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="970" y="380" width="300" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Блок Легенды и описания -->
+        <mxCell id="ent_legend" value="&lt;div style=&quot;background-color:#475569;color:#FFFFFF;padding:6px;font-weight:bold;text-align:center;border-radius:4px 4px 0 0;&quot;&gt;Легенда диаграммы&lt;/div&gt;&lt;div style=&quot;padding:8px;font-size:11px;color:#334155;line-height:1.5;&quot;&gt;&lt;b style=&quot;color:#D97706;&quot;&gt;PK&lt;/b&gt; — Primary Key (Первичный ключ)&lt;br/&gt;&lt;b style=&quot;color:#2563EB;&quot;&gt;FK&lt;/b&gt; — Foreign Key (Внешний ключ)&lt;br/&gt;&lt;b style=&quot;color:#DC2626;&quot;&gt;*&lt;/b&gt; — Обязательное поле (NOT NULL)&lt;br/&gt;&lt;b&gt;1 : N&lt;/b&gt; — Связь «Один ко многим»&lt;br/&gt;&lt;span style=&quot;border-bottom:1px dashed #64748B;&quot;&gt;Пунктир&lt;/span&gt; — Отношение владения/ссылки&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#F8FAFC;strokeColor=#94A3B8;strokeWidth=1;shadow=0;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="970" y="610" width="300" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- СВЯЗИ (Стрелки и кардинальность) -->
+
+        <!-- Связь 1: users -> life_spheres (1 : N) -->
+        <mxCell id="rel_user_sphere" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;настраивает сферы&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0F766E;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontColor=#0F766E;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_user" target="ent_sphere">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Связь 2: life_spheres -> goal_cards (1 : N) -->
+        <mxCell id="rel_sphere_goal" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;группирует цели&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4338CA;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontColor=#4338CA;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_sphere" target="ent_goal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Связь 3: goal_cards -> goal_steps (1 : N) -->
+        <mxCell id="rel_goal_step" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;декомпозиция на шаги&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B45309;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontColor=#B45309;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_goal" target="ent_step">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Связь 4: users -> goal_cards (1 : N, владение) -->
+        <mxCell id="rel_user_goal" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;владеет целями&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=1.5;dashed=1;fontFamily=Helvetica;fontSize=11;fontColor=#475569;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_user" target="ent_goal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="205" y="420" />
+              <mxPoint x="430" y="420" />
+              <mxPoint x="430" y="543" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Связь 5: users -> balance_snapshots (1 : N) -->
+        <mxCell id="rel_user_snapshot" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;история баланса&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0369A1;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontColor=#0369A1;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_user" target="ent_snapshot">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="278" y="90" />
+              <mxPoint x="1120" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Связь 6: balance_snapshots -> balance_snapshot_items (1 : N) -->
+        <mxCell id="rel_snapshot_item" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;содержит баллы&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0E7490;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontColor=#0E7490;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_snapshot" target="ent_snapshot_item">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Связь 7: life_spheres -> balance_snapshot_items (1 : N, срез по сфере) -->
+        <mxCell id="rel_sphere_snapshot_item" value="1 : N&lt;br/&gt;&lt;span style=&quot;font-size:10px;color:#64748B;&quot;&gt;фиксация балла сферы&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0F766E;strokeWidth=1.5;dashed=1;fontFamily=Helvetica;fontSize=11;fontColor=#0F766E;fontStyle=1;startArrow=ERone;endArrow=ERmany;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="ent_sphere" target="ent_snapshot_item">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

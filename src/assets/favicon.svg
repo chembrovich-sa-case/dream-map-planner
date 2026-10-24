@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A73E8"/>
+      <stop offset="55%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+    <linearGradient id="horizon-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#FCD34D"/>
+    </linearGradient>
+    <linearGradient id="sun-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Material background -->
+  <rect width="64" height="64" rx="16" fill="url(#bg-grad)"/>
+
+  <!-- Radar concentric arcs (Google Material geometry) -->
+  <path d="M12 36 A20 20 0 0 1 52 36" stroke="rgba(255, 255, 255, 0.28)" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>
+  <path d="M18 36 A14 14 0 0 1 46 36" stroke="rgba(255, 255, 255, 0.5)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M24 36 A8 8 0 0 1 40 36" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Radar sweep line (diagonal beacon to future goals) -->
+  <line x1="32" y1="36" x2="47" y2="21" stroke="#A7F3D0" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="47" cy="21" r="3" fill="#34D399"/>
+
+  <!-- Sun / Horizon Core Spark -->
+  <circle cx="32" cy="34" r="5" fill="url(#sun-grad)"/>
+
+  <!-- Horizon Line -->
+  <path d="M10 38 L54 38" stroke="url(#horizon-glow)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Subtle reflection ripples -->
+  <path d="M16 43 L48 43" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M22 47 L42 47" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,1404 @@
+openapi: 3.0.3
+info:
+  title: API сервиса «Горизонт» (dream-map-planner)
+  description: |
+    REST API веб-приложения «Горизонт» для визуализации жизненных целей (карта желаний / Vision Board) 
+    и мониторинга баланса по сферам жизни на интерактивной радарной диаграмме (Колесо баланса).
+  version: 1.0.0
+  contact:
+    name: Команда разработки проекта «Горизонт»
+    email: dev@horizont-planner.io
+
+servers:
+  - url: https://api.horizont-planner.io/api/v1
+    description: Production Server
+  - url: http://localhost:8080/api/v1
+    description: Локальный сервер разработки
+
+tags:
+  - name: Сферы жизни
+    description: Управление сферами жизненного баланса (US-1)
+  - name: Карточки целей
+    description: Управление карточками целей и желаний (US-2, UC-1)
+  - name: Чек-листы и шаги
+    description: Декомпозиция целей и трекинг шагов с пересчетом метрик (US-3, US-4, UC-2)
+  - name: Аналитика и баланс
+    description: Сводные данные для радарной диаграммы и исторические срезы (US-5)
+  - name: Администрирование и CMS
+    description: Управление системным справочником сфер, реестром контента и бэкапами базы данных (UC-3)
+  - name: Интеграции и курсы валют
+    description: Взаимодействие с внешними API, включая официальный сервис Нацбанка РБ (НБРБ)
+  - name: Аутентификация и сессии
+    description: Регистрация, вход в систему и ролевая модель доступа RBAC (UC-4)
+
+paths:
+  # ============================================================================
+  # АУТЕНТИФИКАЦИЯ И СЕССИИ (/auth)
+  # ============================================================================
+  /auth/login:
+    post:
+      tags:
+        - Аутентификация и сессии
+      summary: Вход в систему и получение сессии (UC-4)
+      description: Аутентифицирует пользователя по email и паролю, возвращая сессию с назначенной ролью (admin или user).
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "admin@horizon.app"
+              password: "password123"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "INVALID_CREDENTIALS"
+                message: "Неверный логин или пароль"
+                details: []
+
+  /auth/me:
+    get:
+      tags:
+        - Аутентификация и сессии
+      summary: Получить данные текущей пользовательской сессии (UC-4)
+      description: Возвращает профиль текущего пользователя и его активную роль RBAC (admin / user).
+      operationId: getCurrentUserSession
+      responses:
+        '200':
+          description: Сессия активна
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSessionDTO'
+        '401':
+          description: Сессия не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Аутентификация и сессии
+      summary: Завершение сеанса пользователя
+      description: Завершает активную сессию текущего пользователя.
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Сеанс успешно завершен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+  # ============================================================================
+  # СФЕРЫ ЖИЗНИ (/spheres)
+  # ============================================================================
+  /spheres:
+    get:
+      tags:
+        - Сферы жизни
+      summary: Получить список сфер жизни пользователя
+      description: Возвращает все активные сферы жизни пользователя с текущими расчетными и целевыми баллами.
+      operationId: getSpheres
+      responses:
+        '200':
+          description: Список сфер жизни успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LifeSphereResponse'
+              example:
+                - id: "b0000000-0000-0000-0000-000000000001"
+                  user_id: "a0000000-0000-0000-0000-000000000001"
+                  title: "Карьера и бизнес"
+                  description: "Профессиональный рост, руководящие роли, масштабные рабочие проекты"
+                  color: "#3B82F6"
+                  icon: "briefcase"
+                  target_score: 10.0
+                  current_score: 6.7
+                  sort_order: 1
+                  total_active_goals: 2
+                  created_at: "2026-10-24T12:00:00Z"
+                  updated_at: "2026-10-24T15:30:00Z"
+                - id: "b0000000-0000-0000-0000-000000000003"
+                  user_id: "a0000000-0000-0000-0000-000000000001"
+                  title: "Здоровье и спорт"
+                  description: "Физическая форма, бег, сон, правильное питание"
+                  color: "#EF4444"
+                  icon: "heart-pulse"
+                  target_score: 10.0
+                  current_score: 5.0
+                  sort_order: 2
+                  total_active_goals: 1
+                  created_at: "2026-10-24T12:00:00Z"
+                  updated_at: "2026-10-24T14:20:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Сферы жизни
+      summary: Создать новую сферу жизни
+      description: Добавляет новую сферу жизни в индивидуальное колесо баланса пользователя.
+      operationId: createSphere
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSphereRequest'
+            example:
+              title: "Творчество и хобби"
+              description: "Игра на фортепиано, масляная живопись и писательство"
+              color: "#14B8A6"
+              icon: "palette"
+              target_score: 10.0
+              sort_order: 7
+      responses:
+        '201':
+          description: Сфера жизни успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeSphereResponse'
+              example:
+                id: "b0000000-0000-0000-0000-000000000007"
+                user_id: "a0000000-0000-0000-0000-000000000001"
+                title: "Творчество и хобби"
+                description: "Игра на фортепиано, масляная живопись и писательство"
+                color: "#14B8A6"
+                icon: "palette"
+                target_score: 10.0
+                current_score: 0.0
+                sort_order: 7
+                total_active_goals: 0
+                created_at: "2026-10-24T17:20:00Z"
+                updated_at: "2026-10-24T17:20:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /spheres/{id}:
+    patch:
+      tags:
+        - Сферы жизни
+      summary: Обновить параметры сферы жизни
+      description: Изменяет название, цвет, иконку, целевой балл или порядок сортировки сферы.
+      operationId: updateSphere
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор сферы (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "b0000000-0000-0000-0000-000000000001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSphereRequest'
+            example:
+              title: "Карьера, бизнес и стартапы"
+              color: "#2563EB"
+              target_score: 9.5
+      responses:
+        '200':
+          description: Сфера жизни успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeSphereResponse'
+              example:
+                id: "b0000000-0000-0000-0000-000000000001"
+                user_id: "a0000000-0000-0000-0000-000000000001"
+                title: "Карьера, бизнес и стартапы"
+                description: "Профессиональный рост, руководящие роли, масштабные рабочие проекты"
+                color: "#2563EB"
+                icon: "briefcase"
+                target_score: 9.5
+                current_score: 6.7
+                sort_order: 1
+                total_active_goals: 2
+                created_at: "2026-10-24T12:00:00Z"
+                updated_at: "2026-10-24T17:25:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Сферы жизни
+      summary: Удалить сферу жизни
+      description: |
+        Удаляет сферу жизни из системы. Если к сфере привязаны активные цели, 
+        удаление блокируется с ошибкой 409 Conflict во избежание нарушения целостности данных.
+      operationId: deleteSphere
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор сферы (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "b0000000-0000-0000-0000-000000000006"
+      responses:
+        '204':
+          description: Сфера жизни успешно удалена
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Невозможно удалить сферу, так как к ней привязаны цели
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "SPHERE_HAS_GOALS"
+                message: "Невозможно удалить сферу: к ней привязано 2 целей. Сначала удалите или переместите цели."
+                details: []
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================================================
+  # КАРТОЧКИ ЦЕЛЕЙ (/goals)
+  # ============================================================================
+  /goals:
+    get:
+      tags:
+        - Карточки целей
+      summary: Получить список карточек целей
+      description: Возвращает карточки целей с возможностью фильтрации по сфере жизни и статусу.
+      operationId: getGoals
+      parameters:
+        - name: sphere_id
+          in: query
+          required: false
+          description: Фильтр по идентификатору сферы жизни
+          schema:
+            type: string
+            format: uuid
+          example: "b0000000-0000-0000-0000-000000000003"
+        - name: status
+          in: query
+          required: false
+          description: Фильтр по статусу цели
+          schema:
+            type: string
+            enum: [draft, in_progress, achieved, archived]
+          example: "in_progress"
+      responses:
+        '200':
+          description: Список карточек целей успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalCardResponse'
+              example:
+                - id: "c0000000-0000-0000-0000-000000000001"
+                  sphere_id: "b0000000-0000-0000-0000-000000000003"
+                  sphere_title: "Здоровье и спорт"
+                  sphere_color: "#EF4444"
+                  title: "Пробежать первый полумарафон (21.1 км)"
+                  description: "Подготовиться по плану тренера, пройти чекап и финишировать быстрее 1:55:00"
+                  image_url: "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=800&q=80"
+                  deadline: "2027-05-20"
+                  priority: "high"
+                  status: "in_progress"
+                  progress_percent: 50
+                  steps_count: 4
+                  completed_steps_count: 2
+                  steps:
+                    - id: "d0000000-0000-0000-0000-000000000001"
+                      title: "Пройти спортивный чекап сердца (ЭКГ под нагрузкой)"
+                      is_completed: true
+                      sort_order: 1
+                      weight: 1
+                      completed_at: "2026-10-09T10:00:00Z"
+                    - id: "d0000000-0000-0000-0000-000000000003"
+                      title: "Пробежать тестовую длинную тренировку 16 км"
+                      is_completed: false
+                      sort_order: 3
+                      weight: 1
+                      completed_at: null
+                  created_at: "2026-10-01T09:00:00Z"
+                  completed_at: null
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Карточки целей
+      summary: Создать карточку цели и привязать к сфере жизни (UC-1)
+      description: Создает новую карточку цели с привязкой к сфере жизни, изображением, дедлайном и стартовыми шагами чек-листа.
+      operationId: createGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+            example:
+              sphere_id: "b0000000-0000-0000-0000-000000000003"
+              title: "Сдать норматив ГТО на золотой знак"
+              description: "Подтянуть подтягивания до 15 раз и бег на 3 км за 12 минут"
+              image_url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80"
+              deadline: "2027-04-15"
+              priority: "medium"
+              steps:
+                - title: "Купить турник домой и начать программу подтягиваний"
+                  weight: 1
+                - title: "Посетить центр тестирования ГТО и зарегистрировать заявку"
+                  weight: 1
+      responses:
+        '201':
+          description: Карточка цели успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalCardResponse'
+              example:
+                id: "c0000000-0000-0000-0000-000000000005"
+                sphere_id: "b0000000-0000-0000-0000-000000000003"
+                sphere_title: "Здоровье и спорт"
+                sphere_color: "#EF4444"
+                title: "Сдать норматив ГТО на золотой знак"
+                description: "Подтянуть подтягивания до 15 раз и бег на 3 км за 12 минут"
+                image_url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80"
+                deadline: "2027-04-15"
+                priority: "medium"
+                status: "in_progress"
+                progress_percent: 0
+                steps_count: 2
+                completed_steps_count: 0
+                steps:
+                  - id: "d0000000-0000-0000-0000-000000000015"
+                    title: "Купить турник домой и начать программу подтягиваний"
+                    is_completed: false
+                    sort_order: 1
+                    weight: 1
+                    completed_at: null
+                created_at: "2026-10-24T17:30:00Z"
+                completed_at: null
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /goals/{id}:
+    patch:
+      tags:
+        - Карточки целей
+      summary: Обновить параметры карточки цели
+      description: Позволяет изменить название, описание, сферу, дедлайн, приоритет или статус карточки.
+      operationId: updateGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор карточки цели (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "c0000000-0000-0000-0000-000000000001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoalRequest'
+            example:
+              title: "Пробежать марафон (42.2 км)"
+              priority: "critical"
+              deadline: "2027-09-25"
+      responses:
+        '200':
+          description: Карточка цели успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalCardResponse'
+              example:
+                id: "c0000000-0000-0000-0000-000000000001"
+                sphere_id: "b0000000-0000-0000-0000-000000000003"
+                sphere_title: "Здоровье и спорт"
+                sphere_color: "#EF4444"
+                title: "Пробежать марафон (42.2 км)"
+                description: "Подготовиться по плану тренера, пройти чекап"
+                image_url: "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=800&q=80"
+                deadline: "2027-09-25"
+                priority: "critical"
+                status: "in_progress"
+                progress_percent: 50
+                steps_count: 4
+                completed_steps_count: 2
+                created_at: "2026-10-01T09:00:00Z"
+                completed_at: null
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Карточки целей
+      summary: Удалить карточку цели
+      description: Удаляет карточку цели и все связанные шаги чек-листа (каскадное удаление).
+      operationId: deleteGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор карточки цели (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "c0000000-0000-0000-0000-000000000001"
+      responses:
+        '200':
+          description: Карточка цели успешно удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+              example:
+                success: true
+                message: "Карточка цели и связанные шаги успешно удалены"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================================================
+  # ШАГИ ЧЕК-ЛИСТА И ПЕРЕСЧЕТ БАЛАНСА (/goals/.../steps)
+  # ============================================================================
+  /goals/{goalId}/steps/{stepId}/toggle:
+    patch:
+      tags:
+        - Чек-листы и шаги
+      summary: Выполнить/отменить шаг чек-листа с автопересчетом баланса (UC-2)
+      description: |
+        Инвертирует статус выполнения шага чек-листа (`is_completed`), пересчитывает 
+        процент готовности цели и мгновенно пересчитывает актуальный балл сферы 
+        жизни для радарной диаграммы.
+      operationId: toggleStep
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          description: Идентификатор цели (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "c0000000-0000-0000-0000-000000000001"
+        - name: stepId
+          in: path
+          required: true
+          description: Идентификатор шага чек-листа (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "d0000000-0000-0000-0000-000000000003"
+      requestBody:
+        required: false
+        description: Опциональное явное указание статуса (если не передано, статус инвертируется)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleStepRequest'
+            example:
+              is_completed: true
+      responses:
+        '200':
+          description: Шаг обновлен, прогресс цели и индекс сферы успешно пересчитаны
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToggleStepResponse'
+              example:
+                step:
+                  id: "d0000000-0000-0000-0000-000000000003"
+                  goal_id: "c0000000-0000-0000-0000-000000000001"
+                  title: "Пробежать тестовую длинную тренировку 16 км"
+                  is_completed: true
+                  sort_order: 3
+                  weight: 1
+                  completed_at: "2026-10-24T17:35:00Z"
+                goal_progress_percent: 75
+                goal_status: "in_progress"
+                sphere_metrics:
+                  sphere_id: "b0000000-0000-0000-0000-000000000003"
+                  sphere_title: "Здоровье и спорт"
+                  previous_score: 5.0
+                  new_score: 7.5
+                  score_delta: 2.5
+                celebration: false
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================================================
+  # АНАЛИТИКА И РАДАРНАЯ ДИАГРАММА (/analytics/radar-chart)
+  # ============================================================================
+  /analytics/radar-chart:
+    get:
+      tags:
+        - Аналитика и баланс
+      summary: Получить данные для радарной диаграммы баланса жизни (US-5)
+      description: |
+        Возвращает массив осей для построения радарной диаграммы (Колесо жизненного баланса): 
+        целевой контур, текущий рассчитанный контур, а также общий индекс гармоничности.
+      operationId: getRadarChartData
+      responses:
+        '200':
+          description: Данные для радарной диаграммы успешно сформированы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadarChartResponse'
+              example:
+                overall_harmony_index: 0.81
+                evaluated_at: "2026-10-24T17:35:00Z"
+                sectors:
+                  - sphere_id: "b0000000-0000-0000-0000-000000000001"
+                    title: "Карьера и бизнес"
+                    color: "#3B82F6"
+                    icon: "briefcase"
+                    target_score: 10.0
+                    current_score: 6.7
+                    active_goals_count: 1
+                  - sphere_id: "b0000000-0000-0000-0000-000000000002"
+                    title: "Финансы и капитал"
+                    color: "#10B981"
+                    icon: "wallet"
+                    target_score: 10.0
+                    current_score: 7.5
+                    active_goals_count: 1
+                  - sphere_id: "b0000000-0000-0000-0000-000000000003"
+                    title: "Здоровье и спорт"
+                    color: "#EF4444"
+                    icon: "heart-pulse"
+                    target_score: 10.0
+                    current_score: 7.5
+                    active_goals_count: 1
+                  - sphere_id: "b0000000-0000-0000-0000-000000000004"
+                    title: "Семья и отношения"
+                    color: "#EC4899"
+                    icon: "users"
+                    target_score: 10.0
+                    current_score: 8.0
+                    active_goals_count: 0
+                  - sphere_id: "b0000000-0000-0000-0000-000000000005"
+                    title: "Личностный рост"
+                    color: "#8B5CF6"
+                    icon: "book-open"
+                    target_score: 10.0
+                    current_score: 4.0
+                    active_goals_count: 0
+                  - sphere_id: "b0000000-0000-0000-0000-000000000006"
+                    title: "Яркость жизни и путешествия"
+                    color: "#F59E0B"
+                    icon: "plane"
+                    target_score: 10.0
+                    current_score: 3.3
+                    active_goals_count: 1
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================================================
+  # АДМИНИСТРИРОВАНИЕ И CMS (/admin)
+  # ============================================================================
+  /admin/export:
+    get:
+      tags:
+        - Администрирование и CMS
+      summary: Экспорт полной базы данных в JSON (UC-3)
+      description: |
+        Выгружает полный снимок системы (сферы жизни, карточки целей, пункты чек-листов 
+        и системные метаданные) в виде структурированного JSON-файла для локального бэкапа, 
+        миграции или переноса данных.
+      operationId: exportDatabaseBackup
+      responses:
+        '200':
+          description: Полный дамп базы данных успешно сформирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupDTO'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/import:
+    post:
+      tags:
+        - Администрирование и CMS
+      summary: Импорт и восстановление базы данных из JSON (UC-3)
+      description: |
+        Принимает JSON-дамп базы данных, проводит валидацию формата и целостности связей 
+        (существование sphere_id для всех целей), и выполняет атомарное восстановление данных.
+      operationId: importDatabaseBackup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupDTO'
+      responses:
+        '200':
+          description: Данные успешно импортированы и применены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResultDTO'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================================================
+  # ИНТЕГРАЦИИ И КУРСЫ ВАЛЮТ (/integrations)
+  # ============================================================================
+  /integrations/nbrb/rate:
+    get:
+      tags:
+        - Интеграции и курсы валют
+      summary: Получить официальный курс валюты Нацбанка РБ (НБРБ)
+      description: |
+        Возвращает суточный официальный курс иностранной валюты (по умолчанию USD) по отношению к белорусскому рублю (BYN).
+        Эндпоинт обращается к официальному открытому API НБРБ (`https://api.nbrb.by/exrates/rates/USD?parammode=2`)
+        с кэшированием ответа на 24 часа. В случае отсутствия связи или ошибки возвращается кэшированное
+        значение за предыдущий день либо гарантированный резервный курс (fallback 2.97 BYN).
+      operationId: getNbrbExchangeRate
+      parameters:
+        - name: currency
+          in: query
+          required: false
+          description: Буквенный код валюты (USD, EUR, RUB, CNY)
+          schema:
+            type: string
+            default: USD
+            example: USD
+      responses:
+        '200':
+          description: Официальный курс валюты успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NbrbExchangeRateResponse'
+              example:
+                currency_code: "USD"
+                scale: 1
+                rate: 2.9543
+                rate_date: "2026-10-25"
+                source: "api.nbrb.by"
+                cached: true
+                fetched_at: "2026-10-25T00:00:00Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  # ============================================================================
+  # СХЕМЫ ДАННЫХ (SCHEMAS / DTOS)
+  # ============================================================================
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@horizon.app"
+        password:
+          type: string
+          format: password
+          example: "secret123"
+
+    UserSessionDTO:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a0000000-0000-0000-0000-000000000000"
+        email:
+          type: string
+          format: email
+          example: "admin@horizon.app"
+        name:
+          type: string
+          example: "Алексей Администраторов"
+        role:
+          type: string
+          enum: [admin, user, guest]
+          example: "admin"
+          description: Назначенная роль в модели RBAC
+        avatar_url:
+          type: string
+          nullable: true
+          example: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80"
+
+    AuthResponse:
+      type: object
+      required:
+        - token
+        - user
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          description: Bearer JWT токен сессии
+        user:
+          $ref: '#/components/schemas/UserSessionDTO'
+        expires_at:
+          type: string
+          format: date-time
+          example: "2026-10-26T00:00:00Z"
+
+    LifeSphereResponse:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - color
+        - icon
+        - target_score
+        - current_score
+        - sort_order
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор сферы
+        user_id:
+          type: string
+          format: uuid
+          description: Идентификатор владельца сферы
+        title:
+          type: string
+          description: Название сферы жизни
+        description:
+          type: string
+          nullable: true
+          description: Развернутое описание сферы и ценностей
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: HEX-код цвета сферы
+        icon:
+          type: string
+          description: Название иконки (Lucide / Feather icons)
+        target_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 10.0
+          description: Целевой балл сферы
+        current_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 10.0
+          description: Текущий рассчитанный балл наполненности
+        sort_order:
+          type: integer
+          description: Порядковый номер при отображении
+        total_active_goals:
+          type: integer
+          description: Количество активных целей в данной сфере
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateSphereRequest:
+      type: object
+      required:
+        - title
+        - color
+        - icon
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Название сферы
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Описание сферы
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: HEX-код цвета (например, #3B82F6)
+        icon:
+          type: string
+          maxLength: 50
+          description: Название иконки
+        target_score:
+          type: number
+          minimum: 0.0
+          maximum: 10.0
+          default: 10.0
+          description: Целевой ориентир сферы
+        sort_order:
+          type: integer
+          default: 0
+          description: Индекс сортировки
+
+    UpdateSphereRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        icon:
+          type: string
+        target_score:
+          type: number
+          minimum: 0.0
+          maximum: 10.0
+        sort_order:
+          type: integer
+
+    GoalStepDTO:
+      type: object
+      required:
+        - id
+        - title
+        - is_completed
+        - sort_order
+        - weight
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: Текст пункта чек-листа
+        is_completed:
+          type: boolean
+          description: Флаг выполнения шага
+        sort_order:
+          type: integer
+          description: Позиция шага в списке
+        weight:
+          type: integer
+          minimum: 1
+          description: Относительный вес шага
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время закрытия шага
+
+    CreateGoalStepInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 255
+        weight:
+          type: integer
+          minimum: 1
+          default: 1
+
+    GoalCardResponse:
+      type: object
+      required:
+        - id
+        - sphere_id
+        - title
+        - priority
+        - status
+        - progress_percent
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        sphere_id:
+          type: string
+          format: uuid
+        sphere_title:
+          type: string
+          description: Название привязанной сферы жизни
+        sphere_color:
+          type: string
+          description: Цвет привязанной сферы
+        title:
+          type: string
+          description: Название цели
+        description:
+          type: string
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+          description: Ссылка на картинку карты желаний
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          description: Дедлайн реализации цели
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        status:
+          type: string
+          enum: [draft, in_progress, achieved, archived]
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Процент завершения цели
+        cost_amount:
+          type: number
+          format: float
+          minimum: 0.0
+          default: 0.0
+          description: Бюджет/стоимость реализации цели
+        currency:
+          type: string
+          enum: [BYN, USD]
+          default: BYN
+          description: Валюта бюджета цели
+        steps_count:
+          type: integer
+          description: Общее число шагов в чек-листе
+        completed_steps_count:
+          type: integer
+          description: Число выполненных шагов
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalStepDTO'
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateGoalRequest:
+      type: object
+      required:
+        - sphere_id
+        - title
+      properties:
+        sphere_id:
+          type: string
+          format: uuid
+          description: Идентификатор сферы жизни
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+          description: Заголовок цели
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+          description: Фоновое изображение для доски желаний
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        cost_amount:
+          type: number
+          format: float
+          minimum: 0.0
+          default: 0.0
+          description: Бюджет/стоимость цели
+        currency:
+          type: string
+          enum: [BYN, USD]
+          default: BYN
+          description: Валюта бюджета цели (BYN или USD)
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateGoalStepInput'
+          description: Стартовые шаги декомпозиции цели
+
+    UpdateGoalRequest:
+      type: object
+      properties:
+        sphere_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+        image_url:
+          type: string
+          nullable: true
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        status:
+          type: string
+          enum: [draft, in_progress, achieved, archived]
+        cost_amount:
+          type: number
+          format: float
+          minimum: 0.0
+          description: Бюджет/стоимость цели
+        currency:
+          type: string
+          enum: [BYN, USD]
+          description: Валюта бюджета цели
+
+    ToggleStepRequest:
+      type: object
+      properties:
+        is_completed:
+          type: boolean
+          description: Явное состояние флага выполнения (опционально)
+
+    ToggleStepResponse:
+      type: object
+      required:
+        - step
+        - goal_progress_percent
+        - goal_status
+        - sphere_metrics
+      properties:
+        step:
+          $ref: '#/components/schemas/GoalStepDTO'
+        goal_progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Новый расчетный процент выполнения цели
+        goal_status:
+          type: string
+          enum: [draft, in_progress, achieved, archived]
+        sphere_metrics:
+          type: object
+          required:
+            - sphere_id
+            - sphere_title
+            - previous_score
+            - new_score
+            - score_delta
+          properties:
+            sphere_id:
+              type: string
+              format: uuid
+            sphere_title:
+              type: string
+            previous_score:
+              type: number
+              format: float
+            new_score:
+              type: number
+              format: float
+            score_delta:
+              type: number
+              format: float
+              description: Изменение балла сферы (+/-)
+        celebration:
+          type: boolean
+          description: Признак достижения 100% цели для триггера анимации конфетти
+
+    RadarSectorDTO:
+      type: object
+      required:
+        - sphere_id
+        - title
+        - color
+        - icon
+        - target_score
+        - current_score
+        - active_goals_count
+      properties:
+        sphere_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        color:
+          type: string
+        icon:
+          type: string
+        target_score:
+          type: number
+          format: float
+        current_score:
+          type: number
+          format: float
+        active_goals_count:
+          type: integer
+
+    RadarChartResponse:
+      type: object
+      required:
+        - overall_harmony_index
+        - evaluated_at
+        - sectors
+      properties:
+        overall_harmony_index:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Индекс гармоничности колеса баланса (от 0.0 до 1.0)
+        evaluated_at:
+          type: string
+          format: date-time
+          description: Время вычисления среза
+        sectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadarSectorDTO'
+
+    SuccessMessageResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    DatabaseBackupDTO:
+      type: object
+      required:
+        - version
+        - exported_at
+        - spheres
+        - goals
+      properties:
+        version:
+          type: string
+          example: "1.0.0"
+          description: Версия формата схемы резервной копии
+        exported_at:
+          type: string
+          format: date-time
+          example: "2026-10-24T18:00:00Z"
+          description: Дата и время формирования дампа
+        spheres:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeSphereResponse'
+          description: Полный список сфер жизни пользователя
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalCardResponse'
+          description: Реестр карточек целей со всеми вложенными шагами чек-листов
+
+    ImportResultDTO:
+      type: object
+      required:
+        - success
+        - message
+        - imported_spheres_count
+        - imported_goals_count
+        - imported_steps_count
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Результат выполнения операции импорта
+        message:
+          type: string
+          example: "База данных успешно восстановлена: импортировано 6 сфер, 6 целей и 20 шагов чек-листа"
+          description: Человекочитаемый отчет о результатах импорта
+        imported_spheres_count:
+          type: integer
+          example: 6
+          description: Количество загруженных сфер жизни
+        imported_goals_count:
+          type: integer
+          example: 6
+          description: Количество загруженных карточек целей
+        imported_steps_count:
+          type: integer
+          example: 20
+          description: Количество загруженных шагов чек-листов
+
+    NbrbExchangeRateResponse:
+      type: object
+      required:
+        - currency_code
+        - scale
+        - rate
+        - rate_date
+        - source
+      properties:
+        currency_code:
+          type: string
+          example: "USD"
+          description: Буквенный трехзначный код валюты (ISO 4217)
+        scale:
+          type: integer
+          example: 1
+          description: Количество единиц иностранной валюты
+        rate:
+          type: number
+          format: float
+          example: 2.9543
+          description: Официальный курс НБРБ в белорусских рублях (BYN)
+        rate_date:
+          type: string
+          format: date
+          example: "2026-10-25"
+          description: Дата установления официального курса
+        source:
+          type: string
+          example: "api.nbrb.by"
+          description: Источник данных (НБРБ или локальный суточный кэш)
+        cached:
+          type: boolean
+          example: true
+          description: Признак получения курса из суточного кэша
+        fetched_at:
+          type: string
+          format: date-time
+          example: "2026-10-25T00:00:00Z"
+          description: Время фиксации курса в системе
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Машиночитаемый код ошибки (например, VALIDATION_ERROR, NOT_FOUND)
+        message:
+          type: string
+          description: Человекочитаемое описание ошибки на русском языке
+        details:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Дополнительные детали или список невалидных полей
+
+  # ============================================================================
+  # СТАНДАРТНЫЕ ОТВЕТЫ ОШИБОК (RESPONSES)
+  # ============================================================================
+  responses:
+    BadRequestError:
+      description: Некорректный запрос (ошибка валидации параметров)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "VALIDATION_FAILED"
+            message: "Некорректные параметры запроса"
+            details:
+              - "color: код цвета должен быть валидным HEX в формате #RRGGBB"
+              - "title: заголовок цели должен содержать от 3 до 150 символов"
+
+    NotFoundError:
+      description: Запрашиваемый ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "RESOURCE_NOT_FOUND"
+            message: "Цель с указанным идентификатором не найдена"
+            details: []
+
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "INTERNAL_SERVER_ERROR"
+            message: "Произошла непредвиденная ошибка при обработке запроса. Мы уже разбираемся."
+            details: []
