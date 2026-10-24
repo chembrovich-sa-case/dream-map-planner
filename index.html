@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=src/index.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Горизонт — Dream Map Planner</title>
+  <link rel="icon" type="image/svg+xml" href="src/assets/favicon.svg">
+  <script>
+    // Мгновенное перенаправление в приложение с сохранением параметров и хэша
+    window.location.replace("src/index.html" + window.location.search + window.location.hash);
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #F8F9FA;
+      color: #202124;
+    }
+    .loader {
+      text-align: center;
+      padding: 24px;
+      max-width: 400px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #E8EAED;
+      border-top-color: #1A73E8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    p {
+      font-size: 14px;
+      color: #5F6368;
+      margin: 4px 0 12px;
+    }
+    a {
+      color: #1A73E8;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <h1>Горизонт</h1>
+    <p>Запуск приложения для визуализации целей...</p>
+    <p style="font-size: 13px;">Если перенаправление не произошло автоматически, <a href="src/index.html">нажмите здесь</a>.</p>
+  </div>
+</body>
+</html>

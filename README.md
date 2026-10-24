@@ -2,7 +2,11 @@
 
 > Современное интерактивное веб-приложение для визуализации жизненных целей (Карта желаний / Vision Board) и мониторинга баланса по сферам жизни на радарной диаграмме с ролевой моделью доступа (RBAC) и панелью CMS.
 
-![Горизонт](src/assets/logo.svg)
+[![GitHub Pages](https://img.shields.io/badge/Demo-GitHub%20Pages-success?style=for-the-badge&logo=github)](https://chembrovich-sa-case.github.io/dream-map-planner/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+🌐 **Работающее веб-приложение доступно онлайн:**  
+👉 **[https://chembrovich-sa-case.github.io/dream-map-planner/](https://chembrovich-sa-case.github.io/dream-map-planner/)**
 
 ---
 
