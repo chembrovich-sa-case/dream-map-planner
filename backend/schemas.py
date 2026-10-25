@@ -263,6 +263,7 @@ class BalanceSnapshotResponse(BaseModel):
     user_id: uuid.UUID
     overall_harmony_index: Optional[Decimal] = None
     notes: Optional[str] = None
+    scores_data: Optional[dict] = None
     recorded_at: datetime
     created_at: datetime
     items: List[BalanceSnapshotItemResponse] = Field(default_factory=list)

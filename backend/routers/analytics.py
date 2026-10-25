@@ -1,6 +1,7 @@
 """
-Роутер аналитики и исторических данных (UC: Баланс жизни во времени).
+Роутер аналитики и исторических снимков баланса (balance_snapshots).
 Предоставляет REST API для работы с таблицами balance_snapshots и balance_snapshot_items.
+Поддерживает эндпоинты POST/GET /api/snapshots и /api/analytics/snapshots.
 """
 
 import math
@@ -23,7 +24,7 @@ from schemas import (
 )
 from routers.auth import get_current_user
 
-router = APIRouter(prefix="/api/analytics", tags=["Analytics & Balance Snapshots (История и срезы)"])
+router = APIRouter(prefix="/api", tags=["Analytics & Balance Snapshots (История и срезы)"])
 
 
 def calculate_harmony(scores: List[float]) -> float:
@@ -47,8 +48,14 @@ def calculate_harmony(scores: List[float]) -> float:
     "/snapshots",
     response_model=BalanceSnapshotResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Зафиксировать исторический срез баланса жизни",
-    description="Сохраняет точку среза в таблице balance_snapshots. Если список сфер не передан, автоматически берет актуальные баллы текущих сфер жизни пользователя и рассчитывает индекс гармонии."
+    summary="Сохранить текущий срез баланса жизни (POST /api/snapshots)",
+    description="Фиксирует слепок баллов всех сфер в таблице balance_snapshots с сохранением JSON-словаря баллов и связей со сферами."
+)
+@router.post(
+    "/analytics/snapshots",
+    response_model=BalanceSnapshotResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False
 )
 def create_snapshot(
     snapshot_in: BalanceSnapshotCreate = BalanceSnapshotCreate(),
@@ -72,6 +79,7 @@ def create_snapshot(
 
     items_data = []
     scores = []
+    sphere_map = {s.id: s for s in user_spheres}
     
     if snapshot_in.items and len(snapshot_in.items) > 0:
         # Пользователь явно передал баллы
@@ -96,17 +104,24 @@ def create_snapshot(
 
     harmony = Decimal(str(calculate_harmony(scores)))
 
+    # Собираем JSON-словарь баллов: {"Карьера и бизнес": 7.5, "Финансы": 8.0, ...}
+    scores_dict = {}
+    for it_dict in items_data:
+        s_obj = sphere_map.get(it_dict["sphere_id"])
+        key = s_obj.title if s_obj else str(it_dict["sphere_id"])
+        scores_dict[key] = float(it_dict["score"])
+
     snapshot = BalanceSnapshot(
         user_id=current_user.id,
         overall_harmony_index=harmony,
         notes=snapshot_in.notes or f"Срез баланса от {recorded_at.strftime('%d.%m.%Y %H:%M')}",
+        scores_data=scores_dict,
         recorded_at=recorded_at
     )
     db.add(snapshot)
     db.flush()
 
-    # Сохраняем строки среза balance_snapshot_items
-    sphere_map = {s.id: s for s in user_spheres}
+    # Сохраняем строки среза balance_snapshot_items (3NF)
     result_items = []
     for it_dict in items_data:
         item = BalanceSnapshotItem(
@@ -137,27 +152,46 @@ def create_snapshot(
 
     resp = BalanceSnapshotResponse.model_validate(snapshot)
     resp.items = result_items
+    resp.scores_data = scores_dict
     return resp
 
 
 @router.get(
     "/snapshots",
     response_model=List[BalanceSnapshotResponse],
-    summary="Получить историю срезов баланса пользователя",
-    description="Возвращает хронологический список срезов из таблицы balance_snapshots с деталями по сферам (balance_snapshot_items)."
+    summary="Получить историю срезов баланса за выбранный период (GET /api/snapshots)",
+    description="Возвращает историю срезов за период: месяц ('month'), квартал ('quarter'), год ('year') или все время ('all')."
+)
+@router.get(
+    "/analytics/snapshots",
+    response_model=List[BalanceSnapshotResponse],
+    include_in_schema=False
 )
 def get_snapshots(
-    days: Optional[int] = Query(None, description="Фильтр по количеству дней (например, 30, 90)"),
+    period: Optional[str] = Query(None, description="Период выборки: 'month' (месяц), 'quarter' (квартал), 'year' (год), 'all' (все время)"),
+    days: Optional[int] = Query(None, description="Период в днях (например, 30, 90, 365)"),
     limit: int = Query(50, ge=1, le=200, description="Максимальное количество срезов"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    effective_days = days
+    if period:
+        p = period.lower().strip()
+        if p == "month":
+            effective_days = 30
+        elif p == "quarter":
+            effective_days = 90
+        elif p == "year":
+            effective_days = 365
+        elif p == "all":
+            effective_days = None
+
     query = db.query(BalanceSnapshot).options(
         joinedload(BalanceSnapshot.items).joinedload(BalanceSnapshotItem.sphere)
     ).filter(BalanceSnapshot.user_id == current_user.id)
 
-    if days:
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+    if effective_days:
+        since = datetime.now(timezone.utc) - timedelta(days=effective_days)
         query = query.filter(BalanceSnapshot.recorded_at >= since)
 
     snapshots = query.order_by(BalanceSnapshot.recorded_at.asc()).limit(limit).all()
@@ -166,8 +200,12 @@ def get_snapshots(
     for sn in snapshots:
         sn_dict = BalanceSnapshotResponse.model_validate(sn)
         items_resp = []
+        scores_dict = sn.scores_data or {}
+        
         for it in sn.items:
             s_obj = it.sphere
+            if s_obj and s_obj.title not in scores_dict:
+                scores_dict[s_obj.title] = float(it.score)
             items_resp.append(
                 BalanceSnapshotItemResponse(
                     id=it.id,
@@ -181,26 +219,32 @@ def get_snapshots(
                 )
             )
         sn_dict.items = items_resp
+        sn_dict.scores_data = scores_dict
         result.append(sn_dict)
 
     return result
 
 
 @router.get(
-    "/trend",
+    "/snapshots/trend",
     response_model=AnalyticsTrendResponse,
-    summary="Получить агрегированный тренд аналитики для графиков Chart.js",
-    description="Возвращает подготовленные временные ряды: метки дат, динамику общего индекса гармонии (%) и баллы по каждой жизненной сфере."
+    summary="Получить динамику изменения баллов по сферам для Chart.js",
+    description="Возвращает подготовленные ряды для линейного графика: метки дат, кривую гармонии и баллы каждой сферы во времени."
+)
+@router.get(
+    "/analytics/trend",
+    response_model=AnalyticsTrendResponse,
+    include_in_schema=False
 )
 def get_analytics_trend(
-    days: Optional[int] = Query(None, description="Период в днях (по умолчанию все)"),
+    period: Optional[str] = Query(None, description="Период: 'month', 'quarter', 'year', 'all'"),
+    days: Optional[int] = Query(None, description="Период в днях"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Получаем срезы
-    snapshots = get_snapshots(days=days, limit=100, db=db, current_user=current_user)
+    snapshots = get_snapshots(period=period, days=days, limit=100, db=db, current_user=current_user)
     
-    # Если срезов нет, автоматически создаем первоначальный срез на основе текущего состояния
+    # Если срезов еще нет, создаем начальный слепок
     if not snapshots:
         initial = create_snapshot(BalanceSnapshotCreate(notes="Начальный срез колеса баланса"), db=db, current_user=current_user)
         snapshots = [initial]
@@ -209,9 +253,7 @@ def get_analytics_trend(
     dates = []
     harmony_series = []
     
-    # Словарь сфер: sphere_id -> { "sphere_id", "title", "color", "icon", "scores": [] }
     spheres_dict = {}
-
     all_spheres = db.query(LifeSphere).filter(LifeSphere.user_id == current_user.id).order_by(LifeSphere.sort_order.asc()).all()
     for s in all_spheres:
         spheres_dict[str(s.id)] = {
@@ -268,6 +310,11 @@ def get_analytics_trend(
     "/snapshots/{snapshot_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить срез баланса"
+)
+@router.delete(
+    "/analytics/snapshots/{snapshot_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    include_in_schema=False
 )
 def delete_snapshot(
     snapshot_id: uuid.UUID,

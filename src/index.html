@@ -424,26 +424,50 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <!-- Переключатель периодов: Все / 30 дней / 90 дней -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Переключатель режима: Гармония (%) vs По сферам (0-10) -->
+          <div class="inline-flex p-0.5 rounded-lg bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] text-xs">
+            <button type="button" 
+                    id="history-mode-harmony" 
+                    onclick="window.setHistoryViewMode('harmony')"
+                    class="px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-xs transition-all flex items-center gap-1">
+              <i data-lucide="activity" class="w-3 h-3"></i>
+              <span>Гармония</span>
+            </button>
+            <button type="button" 
+                    id="history-mode-spheres" 
+                    onclick="window.setHistoryViewMode('spheres')"
+                    class="px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1">
+              <i data-lucide="layers" class="w-3 h-3"></i>
+              <span>По сферам</span>
+            </button>
+          </div>
+
+          <!-- Переключатель периодов: Все / Месяц / Квартал / Год -->
           <div class="inline-flex p-0.5 rounded-lg bg-[#F1F3F4] dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] text-xs">
             <button type="button" 
                     id="history-period-all" 
-                    onclick="window.setHistoryPeriod(null)"
+                    onclick="window.setHistoryPeriod('all')"
                     class="px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-xs transition-all">
               Все
             </button>
             <button type="button" 
-                    id="history-period-30" 
-                    onclick="window.setHistoryPeriod(30)"
+                    id="history-period-month" 
+                    onclick="window.setHistoryPeriod('month')"
                     class="px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all">
-              30 дней
+              Месяц
             </button>
             <button type="button" 
-                    id="history-period-90" 
-                    onclick="window.setHistoryPeriod(90)"
+                    id="history-period-quarter" 
+                    onclick="window.setHistoryPeriod('quarter')"
                     class="px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all">
-              90 дней
+              Квартал
+            </button>
+            <button type="button" 
+                    id="history-period-year" 
+                    onclick="window.setHistoryPeriod('year')"
+                    class="px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all">
+              Год
             </button>
           </div>
 
@@ -465,10 +489,10 @@
 
       <!-- Подвал карточки с метаданными срезов -->
       <div class="mt-3 pt-3 border-t border-[#E8EAED] dark:border-[#1F2937] flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#5F6368] dark:text-[#94A3B8] gap-2">
-        <div class="flex items-center gap-3">
-          <span class="flex items-center gap-1.5">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span id="history-legend-indicator" class="flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full bg-[#1A73E8]"></span>
-            <span>Индекс гармонии (%)</span>
+            <span id="history-metric-name">Индекс гармонии (%)</span>
           </span>
           <span id="history-snapshots-count" class="font-medium">
             Всего срезов: 0

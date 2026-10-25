@@ -383,6 +383,14 @@ const DEFAULT_STATE = {
       notes: "Стартовая оценка баланса перед началом года",
       recorded_at: new Date(Date.now() - 30 * 86400000).toISOString(),
       created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      scores_data: {
+        "Карьера и бизнес": 4.0,
+        "Финансы и доход": 3.5,
+        "Здоровье и спорт": 3.0,
+        "Семья и отношения": 6.0,
+        "Личностный рост и обучение": 4.0,
+        "Яркость жизни и путешествия": 3.0
+      },
       items: [
         { id: "f0000000-0000-0000-0000-000000000001", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 4.0, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000002", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 3.5, target_score: 10.0 },
@@ -399,10 +407,18 @@ const DEFAULT_STATE = {
       notes: "Прогресс в карьере и регулярные тренировки",
       recorded_at: new Date(Date.now() - 20 * 86400000).toISOString(),
       created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      scores_data: {
+        "Карьера и бизнес": 5.5,
+        "Финансы и доход": 4.0,
+        "Здоровье и спорт": 4.5,
+        "Семья и отношения": 6.5,
+        "Личностный рост и обучение": 5.0,
+        "Яркость жизни и путешествия": 3.5
+      },
       items: [
         { id: "f0000000-0000-0000-0000-000000000007", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 5.5, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000008", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 4.0, target_score: 10.0 },
-        { id: "f0000000-0000-0000-0000-000000000009", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 4.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000003", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 4.5, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000010", sphere_id: "b0000000-0000-0000-0000-000000000004", score: 6.5, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000011", sphere_id: "b0000000-0000-0000-0000-000000000005", score: 5.0, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000012", sphere_id: "b0000000-0000-0000-0000-000000000006", score: 3.5, target_score: 10.0 }
@@ -415,6 +431,14 @@ const DEFAULT_STATE = {
       notes: "Повышение дохода и закрытие чек-листов",
       recorded_at: new Date(Date.now() - 10 * 86400000).toISOString(),
       created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      scores_data: {
+        "Карьера и бизнес": 6.5,
+        "Финансы и доход": 6.0,
+        "Здоровье и спорт": 5.0,
+        "Семья и отношения": 7.5,
+        "Личностный рост и обучение": 5.5,
+        "Яркость жизни и путешествия": 4.0
+      },
       items: [
         { id: "f0000000-0000-0000-0000-000000000013", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 6.5, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000014", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 6.0, target_score: 10.0 },
@@ -431,6 +455,14 @@ const DEFAULT_STATE = {
       notes: "Текущее гармоничное состояние колеса",
       recorded_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
+      scores_data: {
+        "Карьера и бизнес": 6.7,
+        "Финансы и доход": 7.5,
+        "Здоровье и спорт": 5.0,
+        "Семья и отношения": 8.0,
+        "Личностный рост и обучение": 6.0,
+        "Яркость жизни и путешествия": 4.5
+      },
       items: [
         { id: "f0000000-0000-0000-0000-000000000019", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 6.7, target_score: 10.0 },
         { id: "f0000000-0000-0000-0000-000000000020", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 7.5, target_score: 10.0 },
@@ -869,6 +901,8 @@ window.MockAPI = {
 
     return {
       step: { ...step },
+      goal: { ...goal },
+      goal_title: goal.title,
       goal_progress_percent: newProgress,
       goal_status: goal.status,
       sphere_metrics: {
@@ -945,34 +979,56 @@ window.MockAPI = {
   // ИСТОРИЧЕСКИЕ СРЕЗЫ БАЛАНСА И АНАЛИТИКА (BALANCE SNAPSHOTS & TRENDS)
   // ============================================================================
 
-  async getSnapshots({ days = null, limit = 50 } = {}) {
+  async getSnapshots({ period = 'all', days = null, limit = 50 } = {}) {
     let list = db.state.balance_snapshots || [];
-    if (days) {
-      const since = Date.now() - days * 86400000;
+    
+    // Поддержка фильтрации по именованным периодам (month, quarter, year, all)
+    let daysFilter = days;
+    if (!daysFilter && period) {
+      if (period === 'month') daysFilter = 30;
+      else if (period === 'quarter') daysFilter = 90;
+      else if (period === 'year') daysFilter = 365;
+      // 'all' -> без ограничения по дням
+    }
+
+    if (daysFilter) {
+      const since = Date.now() - daysFilter * 86400000;
       list = list.filter(sn => new Date(sn.recorded_at).getTime() >= since);
     }
     const sphereMap = {};
     db.state.spheres.forEach(s => { sphereMap[s.id] = s; });
 
-    const enriched = list.map(sn => ({
-      ...sn,
-      items: (sn.items || []).map(it => {
-        const s = sphereMap[it.sphere_id];
-        return {
-          ...it,
-          sphere_title: s ? s.title : "Сфера",
-          sphere_color: s ? s.color : "#3B82F6",
-          sphere_icon: s ? s.icon : "compass"
-        };
-      })
-    }));
+    const enriched = list.map(sn => {
+      // Собираем scores_data для каждого снимка
+      let scores_data = sn.scores_data;
+      if (!scores_data && sn.items) {
+        scores_data = {};
+        sn.items.forEach(it => {
+          const s = sphereMap[it.sphere_id];
+          scores_data[s ? s.title : it.sphere_id] = Number(it.score);
+        });
+      }
+      return {
+        ...sn,
+        scores_data: scores_data || {},
+        items: (sn.items || []).map(it => {
+          const s = sphereMap[it.sphere_id];
+          return {
+            ...it,
+            sphere_title: s ? s.title : "Сфера",
+            sphere_color: s ? s.color : "#3B82F6",
+            sphere_icon: s ? s.icon : "compass"
+          };
+        })
+      };
+    });
 
     enriched.sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
     return enriched.slice(0, limit);
   },
 
-  async getAnalyticsTrend({ days = null } = {}) {
-    const snapshots = await this.getSnapshots({ days, limit: 100 });
+  async getAnalyticsTrend({ period = 'all', days = null } = {}) {
+    const snapshots = await this.getSnapshots({ period, days, limit: 100 });
     const spheres = db.state.spheres;
     const labels = [];
     const dates = [];
@@ -1047,6 +1103,13 @@ window.MockAPI = {
       }));
     }
 
+    const scores_data = {};
+    snapshotItems.forEach(it => {
+      const sphere = spheres.find(s => s.id === it.sphere_id);
+      const title = sphere ? sphere.title : it.sphere_id;
+      scores_data[title] = Number(it.score);
+    });
+
     const newSnapshot = {
       id: "e" + String(Date.now()).padStart(31, '0'),
       user_id: user.id,
@@ -1054,6 +1117,7 @@ window.MockAPI = {
       notes: notes || `Срез баланса от ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
       recorded_at: now,
       created_at: now,
+      scores_data,
       items: snapshotItems
     };
 

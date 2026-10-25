@@ -325,11 +325,16 @@ def seed_initial_data(db: Session):
 
     sphere_ids = [s["id"] for s in spheres_data]
     for sn_data in snapshots_history:
+        scores_dict = {
+            spheres_data[s_idx]["title"]: sn_data["scores"][s_idx]
+            for s_idx in range(len(sphere_ids))
+        }
         snapshot = BalanceSnapshot(
             id=sn_data["id"],
             user_id=admin_id,
             overall_harmony_index=sn_data["harmony"],
             notes=sn_data["notes"],
+            scores_data=scores_dict,
             recorded_at=now_utc - timedelta(days=sn_data["days_ago"])
         )
         db.add(snapshot)

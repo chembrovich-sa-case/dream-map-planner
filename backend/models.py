@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Text, Boolean, Integer, Numeric, Date, 
-    DateTime, ForeignKey, CheckConstraint, UniqueConstraint
+    DateTime, ForeignKey, CheckConstraint, UniqueConstraint, JSON
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.types import TypeDecorator, CHAR
@@ -251,6 +251,7 @@ class BalanceSnapshot(Base):
     user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     overall_harmony_index = Column(Numeric(3, 2), nullable=True)
     notes = Column(Text, nullable=True)
+    scores_data = Column(JSON, nullable=True)  # JSON-словарь баллов: {"Карьера": 7.5, "Финансы": 6.0, ...}
     recorded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 

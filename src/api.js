@@ -389,6 +389,8 @@
 
         return {
           step: data,
+          goal: updatedGoal,
+          goal_title: updatedGoal ? updatedGoal.title : "",
           goal_progress_percent: progress,
           goal_status: updatedGoal ? updatedGoal.status : "in_progress",
           sphere_metrics: {
@@ -510,11 +512,12 @@
     // 6. СРЕЗЫ БАЛАНСА И ИСТОРИЧЕСКАЯ АНАЛИТИКА (BALANCE SNAPSHOTS & TRENDS)
     // ============================================================================
 
-    async getSnapshots({ days = null, limit = 50 } = {}) {
+    async getSnapshots({ period = null, days = null, limit = 50 } = {}) {
       let query = [];
+      if (period) query.push(`period=${encodeURIComponent(period)}`);
       if (days) query.push(`days=${encodeURIComponent(days)}`);
       if (limit) query.push(`limit=${encodeURIComponent(limit)}`);
-      const endpoint = `/analytics/snapshots${query.length ? '?' + query.join('&') : ''}`;
+      const endpoint = `/snapshots${query.length ? '?' + query.join('&') : ''}`;
 
       const data = await this.request(endpoint);
       if (Array.isArray(data)) {
@@ -522,14 +525,16 @@
       }
 
       if (window.MockAPI) {
-        return await window.MockAPI.getSnapshots({ days, limit });
+        return await window.MockAPI.getSnapshots({ period, days, limit });
       }
       return [];
     }
 
-    async getAnalyticsTrend({ days = null } = {}) {
-      let endpoint = '/analytics/trend';
-      if (days) endpoint += `?days=${encodeURIComponent(days)}`;
+    async getAnalyticsTrend({ period = null, days = null } = {}) {
+      let query = [];
+      if (period) query.push(`period=${encodeURIComponent(period)}`);
+      if (days) query.push(`days=${encodeURIComponent(days)}`);
+      const endpoint = `/snapshots/trend${query.length ? '?' + query.join('&') : ''}`;
 
       const data = await this.request(endpoint);
       if (data && data.harmony_series && Array.isArray(data.labels)) {
@@ -537,7 +542,7 @@
       }
 
       if (window.MockAPI) {
-        return await window.MockAPI.getAnalyticsTrend({ days });
+        return await window.MockAPI.getAnalyticsTrend({ period, days });
       }
       return {
         labels: [],
@@ -553,7 +558,7 @@
     }
 
     async createSnapshot({ notes = null, items = null } = {}) {
-      const data = await this.request('/analytics/snapshots', {
+      const data = await this.request('/snapshots', {
         method: 'POST',
         body: JSON.stringify({ notes, items })
       });
@@ -569,7 +574,7 @@
     }
 
     async deleteSnapshot(id) {
-      const data = await this.request(`/analytics/snapshots/${id}`, {
+      const data = await this.request(`/snapshots/${id}`, {
         method: 'DELETE'
       });
 

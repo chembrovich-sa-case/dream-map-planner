@@ -10,7 +10,9 @@ const appState = {
   searchQuery: '',
   chartInstance: null,
   historyChartInstance: null,
+  historyPeriod: 'all',
   historyPeriodDays: null,
+  historyViewMode: 'harmony',
   activeCurrency: localStorage.getItem('horizont_currency') || 'BYN',
   fxRate: 2.9543,
   fxRateData: null,
@@ -864,7 +866,8 @@ async function renderBalanceHistoryChart() {
   if (!canvas) return;
 
   try {
-    const trendData = await getApi().getAnalyticsTrend({ days: appState.historyPeriodDays });
+    const period = appState.historyPeriod || 'all';
+    const trendData = await getApi().getAnalyticsTrend({ period });
 
     // Обновляем бейдж прироста гармонии
     const growthBadge = document.getElementById('history-growth-badge');
@@ -895,19 +898,89 @@ async function renderBalanceHistoryChart() {
       noteEl.textContent = `Текущий индекс: ${Math.round(trendData.current_harmony_index * 100)}% (срез от ${lastDate})`;
     }
 
+    const metricNameEl = document.getElementById('history-metric-name');
+    if (metricNameEl) {
+      metricNameEl.textContent = (appState.historyViewMode === 'spheres')
+        ? 'Баллы по ключевым сферам (0–10)'
+        : 'Индекс гармонии (%)';
+    }
+
     const ctx = canvas.getContext('2d');
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(218, 220, 224, 0.5)';
     const tickColor = isDark ? '#94A3B8' : '#5F6368';
 
-    // Градиент заливки под кривой тренда
-    const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-    gradient.addColorStop(0, 'rgba(26, 115, 232, 0.35)');
-    gradient.addColorStop(1, 'rgba(26, 115, 232, 0.00)');
+    let datasets = [];
+    let yOptions = {};
+    let pluginsOptions = {};
 
-    const chartData = {
-      labels: trendData.labels || [],
-      datasets: [
+    if (appState.historyViewMode === 'spheres') {
+      // Режим отображения баллов по ключевым сферам жизни
+      datasets = (trendData.spheres_series || []).map(s => ({
+        label: s.title,
+        data: s.scores || [],
+        borderColor: s.color || '#3B82F6',
+        backgroundColor: (s.color || '#3B82F6') + '20',
+        borderWidth: 2.2,
+        tension: 0.35,
+        fill: false,
+        pointBackgroundColor: s.color || '#3B82F6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 1.5,
+        pointRadius: 4,
+        pointHoverRadius: 6.5
+      }));
+
+      yOptions = {
+        min: 0,
+        max: 10,
+        ticks: {
+          stepSize: 2,
+          color: tickColor,
+          font: { family: 'Inter', size: 11 },
+          callback: function(value) {
+            return value + ' б.';
+          }
+        },
+        grid: {
+          color: gridColor,
+          drawBorder: false
+        }
+      };
+
+      pluginsOptions = {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { family: 'Inter', size: 11 },
+            color: tickColor
+          }
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#1E293B' : '#202124',
+          titleFont: { family: 'Plus Jakarta Sans', weight: 'bold', size: 12 },
+          bodyFont: { family: 'Inter', size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return ` ${context.dataset.label}: ${context.parsed.y} / 10`;
+            }
+          }
+        }
+      };
+    } else {
+      // Режим общего индекса гармонии (0-100%)
+      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+      gradient.addColorStop(0, 'rgba(26, 115, 232, 0.35)');
+      gradient.addColorStop(1, 'rgba(26, 115, 232, 0.00)');
+
+      datasets = [
         {
           label: 'Индекс гармонии (%)',
           data: trendData.harmony_series || [],
@@ -925,18 +998,52 @@ async function renderBalanceHistoryChart() {
           pointHoverBorderColor: '#ffffff',
           pointHoverBorderWidth: 2.5
         }
-      ]
+      ];
+
+      yOptions = {
+        min: 0,
+        max: 100,
+        ticks: {
+          stepSize: 20,
+          color: tickColor,
+          font: { family: 'Inter', size: 11 },
+          callback: function(value) {
+            return value + '%';
+          }
+        },
+        grid: {
+          color: gridColor,
+          drawBorder: false
+        }
+      };
+
+      pluginsOptions = {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#1E293B' : '#202124',
+          titleFont: { family: 'Plus Jakarta Sans', weight: 'bold', size: 12 },
+          bodyFont: { family: 'Inter', size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return ` Индекс гармонии: ${context.parsed.y}%`;
+            }
+          }
+        }
+      };
+    }
+
+    const chartData = {
+      labels: trendData.labels || [],
+      datasets
     };
 
     if (appState.historyChartInstance) {
-      appState.historyChartInstance.data = chartData;
-      appState.historyChartInstance.options.scales.x.grid.color = gridColor;
-      appState.historyChartInstance.options.scales.x.ticks.color = tickColor;
-      appState.historyChartInstance.options.scales.y.grid.color = gridColor;
-      appState.historyChartInstance.options.scales.y.ticks.color = tickColor;
-      appState.historyChartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : '#202124';
-      appState.historyChartInstance.update();
-      return;
+      appState.historyChartInstance.destroy();
+      appState.historyChartInstance = null;
     }
 
     appState.historyChartInstance = new Chart(ctx, {
@@ -960,40 +1067,9 @@ async function renderBalanceHistoryChart() {
               font: { family: 'Inter', size: 11 }
             }
           },
-          y: {
-            min: 0,
-            max: 100,
-            ticks: {
-              stepSize: 20,
-              color: tickColor,
-              font: { family: 'Inter', size: 11 },
-              callback: function(value) {
-                return value + '%';
-              }
-            },
-            grid: {
-              color: gridColor,
-              drawBorder: false
-            }
-          }
+          y: yOptions
         },
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            backgroundColor: isDark ? '#1E293B' : '#202124',
-            titleFont: { family: 'Plus Jakarta Sans', weight: 'bold', size: 12 },
-            bodyFont: { family: 'Inter', size: 12 },
-            padding: 10,
-            cornerRadius: 8,
-            callbacks: {
-              label: function(context) {
-                return ` Индекс гармонии: ${context.parsed.y}%`;
-              }
-            }
-          }
-        },
+        plugins: pluginsOptions,
         animation: {
           duration: 400,
           easing: 'easeOutQuart'
@@ -1006,20 +1082,39 @@ async function renderBalanceHistoryChart() {
 }
 
 /**
- * Переключение временного диапазона срезов
+ * Переключение временного диапазона срезов: 'all', 'month', 'quarter', 'year'
  */
-window.setHistoryPeriod = function(days) {
-  appState.historyPeriodDays = days;
+window.setHistoryPeriod = function(period) {
+  appState.historyPeriod = period || 'all';
   const btnAll = document.getElementById('history-period-all');
-  const btn30 = document.getElementById('history-period-30');
-  const btn90 = document.getElementById('history-period-90');
+  const btnMonth = document.getElementById('history-period-month');
+  const btnQuarter = document.getElementById('history-period-quarter');
+  const btnYear = document.getElementById('history-period-year');
 
   const activeClass = "px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-xs transition-all";
   const inactiveClass = "px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
 
-  if (btnAll) btnAll.className = (days === null) ? activeClass : inactiveClass;
-  if (btn30) btn30.className = (days === 30) ? activeClass : inactiveClass;
-  if (btn90) btn90.className = (days === 90) ? activeClass : inactiveClass;
+  if (btnAll) btnAll.className = (appState.historyPeriod === 'all') ? activeClass : inactiveClass;
+  if (btnMonth) btnMonth.className = (appState.historyPeriod === 'month') ? activeClass : inactiveClass;
+  if (btnQuarter) btnQuarter.className = (appState.historyPeriod === 'quarter') ? activeClass : inactiveClass;
+  if (btnYear) btnYear.className = (appState.historyPeriod === 'year') ? activeClass : inactiveClass;
+
+  renderBalanceHistoryChart();
+};
+
+/**
+ * Переключение режима отображения: 'harmony' (индекс гармонии) или 'spheres' (баллы по сферам)
+ */
+window.setHistoryViewMode = function(mode) {
+  appState.historyViewMode = mode || 'harmony';
+  const btnHarmony = document.getElementById('history-mode-harmony');
+  const btnSpheres = document.getElementById('history-mode-spheres');
+
+  const activeClass = "px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-xs transition-all flex items-center gap-1";
+  const inactiveClass = "px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1";
+
+  if (btnHarmony) btnHarmony.className = (appState.historyViewMode === 'harmony') ? activeClass : inactiveClass;
+  if (btnSpheres) btnSpheres.className = (appState.historyViewMode === 'spheres') ? activeClass : inactiveClass;
 
   renderBalanceHistoryChart();
 };
@@ -1625,9 +1720,22 @@ window.handleToggleStepDetail = async function(goalId, stepId) {
   try {
     const result = await getApi().toggleStep(goalId, stepId);
     await renderGoalDetail(goalId);
-    if (result.celebration && typeof confetti === 'function') {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    if (result.celebration) {
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
       showToast('🎉 Поздравляем! Цель выполнена на 100%!', 'celebration');
+      
+      // Автоматическое сохранение снимка баланса при завершении цели
+      try {
+        const goalTitle = result.goal_title || (result.goal ? result.goal.title : 'цель');
+        await getApi().createSnapshot({
+          notes: `🎯 Авто-снимок: цель «${goalTitle}» выполнена на 100%!`
+        });
+        await renderBalanceHistoryChart();
+      } catch (snapErr) {
+        console.warn("Авто-снимок баланса пропущен:", snapErr);
+      }
     }
     // Фоновое обновление дашборда и радарного колеса
     renderRadarAndAnalytics();
@@ -1684,13 +1792,26 @@ window.handleToggleStep = async (goalId, stepId) => {
   try {
     const result = await getApi().toggleStep(goalId, stepId);
 
-    if (result.celebration && typeof confetti === 'function') {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 }
-      });
+    if (result.celebration) {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      }
       showToast('🎉 Поздравляем! Цель выполнена на 100%!', 'celebration');
+
+      // Автоматическое сохранение снимка баланса при завершении цели
+      try {
+        const goalTitle = result.goal_title || (result.goal ? result.goal.title : 'цель');
+        await getApi().createSnapshot({
+          notes: `🎯 Авто-снимок: цель «${goalTitle}» выполнена на 100%!`
+        });
+        await renderBalanceHistoryChart();
+      } catch (snapErr) {
+        console.warn("Авто-снимок баланса пропущен:", snapErr);
+      }
     } else {
       const deltaSign = (result.sphere_metrics && result.sphere_metrics.score_delta > 0) ? '+' : '';
       const deltaText = (result.sphere_metrics && result.sphere_metrics.score_delta !== 0)
@@ -1845,6 +1966,17 @@ async function handleCreateGoalSubmit(e) {
         currency
       });
       showToast('Цель успешно обновлена в CMS', 'success');
+
+      if (status === 'achieved') {
+        try {
+          await getApi().createSnapshot({
+            notes: `🎯 Авто-снимок: цель «${title}» отмечена выполненной!`
+          });
+          await renderBalanceHistoryChart();
+        } catch (snapErr) {
+          console.warn("Авто-снимок баланса пропущен:", snapErr);
+        }
+      }
     } else {
       await getApi().createGoal({
         title,
