@@ -245,7 +245,7 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .dark .google-table tbody tr:hover {
-  background-color: #1F2937/50;
+  background-color: rgba(31, 41, 55, 0.5);
 }
 
 /* Заголовок карточки цели */

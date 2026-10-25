@@ -223,35 +223,52 @@ function setupTheme() {
   const mobileThemeText = document.getElementById('mobile-theme-text');
 
   function applyTheme(isDark) {
+    appState.isDarkMode = isDark;
     if (isDark) {
       html.classList.add('dark');
+      document.body.classList.add('dark');
+      html.setAttribute('data-theme', 'dark');
+      document.body.setAttribute('data-theme', 'dark');
       localStorage.setItem('horizont_theme', 'dark');
       if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
+      if (themeToggleBtn) {
+        themeToggleBtn.setAttribute('title', 'Переключить на светлую тему');
+        themeToggleBtn.setAttribute('aria-label', 'Переключить на светлую тему');
+      }
       if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'sun');
       if (mobileThemeText) mobileThemeText.textContent = 'Светлая тема';
     } else {
       html.classList.remove('dark');
+      document.body.classList.remove('dark');
+      html.setAttribute('data-theme', 'light');
+      document.body.setAttribute('data-theme', 'light');
       localStorage.setItem('horizont_theme', 'light');
       if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
+      if (themeToggleBtn) {
+        themeToggleBtn.setAttribute('title', 'Переключить на тёмную тему');
+        themeToggleBtn.setAttribute('aria-label', 'Переключить на тёмную тему');
+      }
       if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'moon');
       if (mobileThemeText) mobileThemeText.textContent = 'Тёмная тема';
     }
     safeLucideIcons();
-    if (appState.chartInstance) {
-      updateChartTheme();
-    }
+    updateChartTheme();
   }
 
-  window.toggleAppTheme = function() {
-    appState.isDarkMode = !appState.isDarkMode;
-    applyTheme(appState.isDarkMode);
+  window.toggleAppTheme = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const currentIsDark = html.classList.contains('dark');
+    applyTheme(!currentIsDark);
   };
 
-  applyTheme(appState.isDarkMode);
+  // Первичная синхронизация состояния с localStorage или системной темой
+  const savedTheme = localStorage.getItem('horizont_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialDark = savedTheme ? (savedTheme === 'dark') : prefersDark;
+  applyTheme(initialDark);
 
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', window.toggleAppTheme);
-  }
+  // ВАЖНО: В HTML на кнопках уже прописано onclick="window.toggleAppTheme()".
+  // Не вешаем addEventListener на themeToggleBtn, чтобы не вызывать функцию дважды за клик!
 }
 
 /**
@@ -848,7 +865,7 @@ function renderRadarChart(sectors) {
 
 function updateChartTheme() {
   const isDark = document.documentElement.classList.contains('dark');
-  if (appState.chartInstance) {
+  if (appState.chartInstance && appState.chartInstance.options && appState.chartInstance.options.scales && appState.chartInstance.options.scales.r) {
     const gridColor = isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(218, 220, 224, 0.6)';
     const angleLineColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(218, 220, 224, 0.8)';
     const labelColor = isDark ? '#E2E8F0' : '#202124';
@@ -857,17 +874,29 @@ function updateChartTheme() {
     appState.chartInstance.options.scales.r.angleLines.color = angleLineColor;
     appState.chartInstance.options.scales.r.pointLabels.color = labelColor;
     appState.chartInstance.options.scales.r.ticks.color = isDark ? '#94A3B8' : '#5F6368';
+    if (appState.chartInstance.options.scales.r.ticks) {
+      appState.chartInstance.options.scales.r.ticks.backdropColor = isDark ? 'rgba(17, 24, 39, 0.8)' : 'rgba(255, 255, 255, 0.8)';
+    }
     appState.chartInstance.update();
   }
 
-  if (appState.historyChartInstance) {
+  if (appState.historyChartInstance && appState.historyChartInstance.options && appState.historyChartInstance.options.scales) {
     const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(218, 220, 224, 0.5)';
     const tickColor = isDark ? '#94A3B8' : '#5F6368';
-    appState.historyChartInstance.options.scales.x.grid.color = gridColor;
-    appState.historyChartInstance.options.scales.x.ticks.color = tickColor;
-    appState.historyChartInstance.options.scales.y.grid.color = gridColor;
-    appState.historyChartInstance.options.scales.y.ticks.color = tickColor;
-    appState.historyChartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : '#202124';
+    if (appState.historyChartInstance.options.scales.x) {
+      appState.historyChartInstance.options.scales.x.grid.color = gridColor;
+      appState.historyChartInstance.options.scales.x.ticks.color = tickColor;
+    }
+    if (appState.historyChartInstance.options.scales.y) {
+      appState.historyChartInstance.options.scales.y.grid.color = gridColor;
+      appState.historyChartInstance.options.scales.y.ticks.color = tickColor;
+    }
+    if (appState.historyChartInstance.options.plugins && appState.historyChartInstance.options.plugins.tooltip) {
+      appState.historyChartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : '#202124';
+    }
+    if (appState.historyChartInstance.options.plugins && appState.historyChartInstance.options.plugins.legend && appState.historyChartInstance.options.plugins.legend.labels) {
+      appState.historyChartInstance.options.plugins.legend.labels.color = isDark ? '#E2E8F0' : '#202124';
+    }
     appState.historyChartInstance.update();
   }
 }

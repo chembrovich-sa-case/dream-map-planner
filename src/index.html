@@ -42,6 +42,23 @@
     }
   </script>
 
+  <!-- Мгновенная инициализация сохраненной темы до рендера DOM (без FOUC / мигания) -->
+  <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('horizont_theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Кастомные стили -->
   <link rel="stylesheet" href="styles.css">
 
@@ -207,7 +224,7 @@
   <!-- ============================================================================ -->
   <!-- ВЕРХНИЙ ХЕДЕР В СТИЛЕ GOOGLE FOR DEVELOPERS (Адаптивный Mobile First)        -->
   <!-- ============================================================================ -->
-  <header id="app-header" class="sticky top-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-[#E8EAED] dark:border-[#1F2937] transition-all">
+  <header id="app-header" class="relative md:sticky md:top-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-[#E8EAED] dark:border-[#1F2937] transition-all">
     <div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1.5 sm:gap-3">
       
       <!-- ЛЕВАЯ ЧАСТЬ: Логотип «ГОРИЗОНТ» -->
