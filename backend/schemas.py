@@ -49,8 +49,9 @@ class UserResponse(UserBase):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr = Field(..., example="admin@horizon.app")
-    password: Optional[str] = Field("demo", example="demo")
+    email: Optional[str] = Field(None, example="admin@horizon.app")
+    username: Optional[str] = Field(None, example="admin")
+    password: Optional[str] = Field("admin", example="admin")
 
 
 class TokenResponse(BaseModel):

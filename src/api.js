@@ -116,35 +116,44 @@
     // 1. АВТОРИЗАЦИЯ И ПОЛЬЗОВАТЕЛИ (RBAC)
     // ============================================================================
 
+    isAuthenticated() {
+      const session = localStorage.getItem('horizont_auth_session');
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY) || this.authToken;
+      const user = this.getCurrentUser();
+      return Boolean(session === 'true' && token && user && user.role !== 'guest');
+    }
+
     getCurrentUser() {
       if (window.MockAPI) {
         return window.MockAPI.getCurrentUser();
       }
       try {
         const raw = localStorage.getItem(USER_STORAGE_KEY);
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u && u.role && u.role !== 'guest') return u;
+        }
       } catch (e) {
         console.warn("Ошибка чтения пользователя:", e);
       }
-      return {
-        id: "a0000000-0000-0000-0000-000000000000",
-        email: "admin@horizon.app",
-        name: "Алексей Администраторов",
-        role: "admin",
-        avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80"
-      };
+      return null;
     }
 
-    async login(email) {
+    async login(usernameOrEmail, password = "admin") {
+      let identifier = (usernameOrEmail || "").trim().toLowerCase();
+      if (identifier === 'admin') identifier = 'admin@horizon.app';
+      if (identifier === 'user') identifier = 'user@horizon.app';
+
       const data = await this.request('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: email })
+        body: JSON.stringify({ email: identifier, username: usernameOrEmail, password })
       });
 
       if (data && data.user) {
-        this.authToken = data.access_token || email;
+        this.authToken = data.access_token || identifier;
         localStorage.setItem(TOKEN_STORAGE_KEY, this.authToken);
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        localStorage.setItem('horizont_auth_session', 'true');
         return {
           token: this.authToken,
           user: data.user
@@ -153,30 +162,32 @@
 
       // Фолбэк на MockAPI
       if (window.MockAPI) {
-        const res = await window.MockAPI.login(email);
+        const res = await window.MockAPI.login(usernameOrEmail, password);
         this.authToken = res.token;
         localStorage.setItem(TOKEN_STORAGE_KEY, this.authToken);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+        localStorage.setItem('horizont_auth_session', 'true');
         return res;
       }
 
-      throw new Error(`Пользователь ${email} не найден`);
+      throw new Error(`Пользователь «${usernameOrEmail}» не найден`);
     }
 
     async logout() {
       this.authToken = null;
       localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem('horizont_auth_session');
       if (window.MockAPI) {
         return await window.MockAPI.logout();
       }
-      const guest = {
+      return {
         id: "a0000000-0000-0000-0000-000000000002",
         email: "guest@horizon.app",
         name: "Гость",
         role: "guest",
         avatar_url: null
       };
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(guest));
-      return guest;
     }
 
     getDemoUsers() {

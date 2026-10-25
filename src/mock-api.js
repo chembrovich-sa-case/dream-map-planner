@@ -660,26 +660,47 @@ const db = new MockDatabase();
  */
 window.MockAPI = {
   // ============================================================================
-  // АУТЕНТИФИКАЦИЯ И РОЛЕВАЯ МОДЕЛЬ (RBAC: UC-4)
+  // АУТЕНТИФИКАЦИЯ И РОЛЕВАЯ МОДЕЛЬ (RBAC: UC-4 & LOGIN WALL)
   // ============================================================================
+  isAuthenticated() {
+    const session = localStorage.getItem('horizont_auth_session');
+    const user = this.getCurrentUser();
+    return Boolean(session === 'true' && user && user.role !== 'guest');
+  },
+
   getCurrentUser() {
     try {
       const raw = localStorage.getItem('horizont_current_user');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u && u.role && u.role !== 'guest') return u;
+      }
     } catch (e) {
       console.warn("Ошибка чтения текущего пользователя:", e);
     }
-    const defaultUser = DEMO_USERS[0];
-    localStorage.setItem('horizont_current_user', JSON.stringify(defaultUser));
-    return defaultUser;
+    // В закрытом контуре по умолчанию сессия отсутствует
+    return null;
   },
 
-  async login(email) {
-    const target = DEMO_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+  async login(usernameOrEmail, password = "admin") {
+    let identifier = (usernameOrEmail || "").trim().toLowerCase();
+    if (identifier === 'admin') identifier = 'admin@horizon.app';
+    if (identifier === 'user') identifier = 'user@horizon.app';
+
+    const target = DEMO_USERS.find(u => 
+      u.email.toLowerCase() === identifier || 
+      u.role.toLowerCase() === identifier ||
+      u.name.toLowerCase().includes(identifier)
+    );
+
     if (!target) {
-      throw new Error(`Пользователь ${email} не найден`);
+      throw new Error(`Пользователь «${usernameOrEmail}» не найден`);
     }
+
     localStorage.setItem('horizont_current_user', JSON.stringify(target));
+    localStorage.setItem('horizont_auth_token', "mock-jwt-" + btoa(target.email));
+    localStorage.setItem('horizont_auth_session', 'true');
+
     return {
       token: "mock-jwt-" + btoa(target.email),
       user: target,
@@ -688,15 +709,16 @@ window.MockAPI = {
   },
 
   async logout() {
-    const guestUser = {
+    localStorage.removeItem('horizont_auth_token');
+    localStorage.removeItem('horizont_auth_session');
+    localStorage.removeItem('horizont_current_user');
+    return {
       id: "a0000000-0000-0000-0000-000000000002",
       email: "guest@horizon.app",
       name: "Гость",
       role: "guest",
       avatar_url: null
     };
-    localStorage.setItem('horizont_current_user', JSON.stringify(guestUser));
-    return guestUser;
   },
 
   getDemoUsers() {

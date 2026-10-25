@@ -16,7 +16,7 @@ const appState = {
   activeCurrency: localStorage.getItem('horizont_currency') || 'BYN',
   fxRate: 2.9543,
   fxRateData: null,
-  currentUser: (window.API && window.API.getCurrentUser()) || (window.MockAPI ? window.MockAPI.getCurrentUser() : null),
+  currentUser: null,
   currentMode: 'dashboard',
   activeGoalId: null,
   isDarkMode: localStorage.getItem('horizont_theme') === 'dark' || 
@@ -49,6 +49,15 @@ async function startApp() {
     await window.API.checkHealth();
   }
 
+  // Проверка сессии закрытого контура (Login Wall)
+  const isAuth = getApi().isAuthenticated();
+  if (!isAuth) {
+    showLoginWall();
+    return;
+  }
+
+  appState.currentUser = getApi().getCurrentUser();
+  hideLoginWall();
   applyRBAC();
   await initExchangeRate();
   await refreshAll();
@@ -65,6 +74,7 @@ async function startApp() {
   }
 
   window.addEventListener('hashchange', () => {
+    if (!getApi().isAuthenticated()) return;
     const currentHash = window.location.hash;
     if (currentHash.startsWith('#goal=')) {
       const gId = currentHash.replace('#goal=', '');
@@ -397,6 +407,10 @@ function setupEventListeners() {
   const goalDetailView = document.getElementById('goal-detail-view');
 
   function setAppMode(mode) {
+    if (!getApi().isAuthenticated()) {
+      showLoginWall();
+      return;
+    }
     const fabBtn = document.getElementById('open-create-goal-modal');
     if (mode === 'cms') {
       const user = appState.currentUser || getApi().getCurrentUser();
@@ -1380,6 +1394,10 @@ function formatDeadline(dateString) {
  */
 
 window.openGoalDetail = function(goalId) {
+  if (!getApi().isAuthenticated()) {
+    showLoginWall();
+    return;
+  }
   if (!goalId) return;
   appState.activeGoalId = goalId;
   window.location.hash = 'goal=' + goalId;
@@ -2371,7 +2389,13 @@ function escapeHTML(str) {
  * Ролевой контроль доступа (RBAC: UC-4)
  */
 function applyRBAC() {
-  const currentUser = appState.currentUser || getApi().getCurrentUser();
+  const currentUser = appState.currentUser || getApi().getCurrentUser() || {
+    name: 'Гость',
+    email: 'guest@horizon.app',
+    role: 'guest',
+    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'
+  };
+  if (!currentUser) return;
   appState.currentUser = currentUser;
 
   const headerAvatar = document.getElementById('header-user-avatar');
@@ -2452,7 +2476,12 @@ window.openAuthModal = function() {
   const modal = document.getElementById('auth-modal');
   if (!modal) return;
 
-  const currentUser = appState.currentUser || getApi().getCurrentUser();
+  const currentUser = appState.currentUser || getApi().getCurrentUser() || {
+    name: 'Гость',
+    email: 'guest@horizon.app',
+    role: 'guest',
+    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'
+  };
   const avatarEl = document.getElementById('auth-modal-user-avatar');
   const nameEl = document.getElementById('auth-modal-user-name');
   const emailEl = document.getElementById('auth-modal-user-email');
@@ -2522,14 +2551,169 @@ window.switchDemoUser = async function(email) {
   }
 };
 
+/**
+ * ============================================================================
+ * ЭКРАН АВТОРИЗАЦИИ И ЗАКРЫТЫЙ КОНТУР (LOGIN WALL)
+ * ============================================================================
+ */
+
+function showLoginWall() {
+  const loginWall = document.getElementById('login-wall-view');
+  const appHeader = document.getElementById('app-header');
+  const dashboardView = document.getElementById('dashboard-view');
+  const cmsView = document.getElementById('cms-view');
+  const goalDetailView = document.getElementById('goal-detail-view');
+  const fabBtn = document.getElementById('open-create-goal-modal');
+  const errorEl = document.getElementById('login-wall-error');
+
+  if (loginWall) {
+    loginWall.classList.remove('hidden');
+    loginWall.classList.add('flex');
+  }
+  if (appHeader) appHeader.classList.add('hidden');
+  if (dashboardView) dashboardView.classList.add('hidden');
+  if (cmsView) cmsView.classList.add('hidden');
+  if (goalDetailView) goalDetailView.classList.add('hidden');
+  if (fabBtn) fabBtn.classList.add('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  const pwdInput = document.getElementById('login-password');
+  if (pwdInput) pwdInput.value = '';
+
+  safeLucideIcons();
+}
+
+function hideLoginWall() {
+  const loginWall = document.getElementById('login-wall-view');
+  const appHeader = document.getElementById('app-header');
+  const fabBtn = document.getElementById('open-create-goal-modal');
+
+  if (loginWall) {
+    loginWall.classList.add('hidden');
+    loginWall.classList.remove('flex');
+  }
+  if (appHeader) appHeader.classList.remove('hidden');
+  if (fabBtn) fabBtn.classList.remove('hidden');
+
+  safeLucideIcons();
+}
+
+window.handleLoginWallSubmit = async function(e) {
+  if (e) e.preventDefault();
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  const submitBtn = document.getElementById('login-wall-submit-btn');
+  const errorEl = document.getElementById('login-wall-error');
+  const errorTextEl = document.getElementById('login-wall-error-text');
+
+  const username = usernameInput ? usernameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (!username) {
+    if (errorEl) {
+      if (errorTextEl) errorTextEl.textContent = 'Укажите логин или email пользователя';
+      errorEl.classList.remove('hidden');
+    }
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> <span>Авторизация...</span>`;
+  }
+
+  try {
+    const authResult = await getApi().login(username, password);
+    appState.currentUser = authResult.user;
+    if (errorEl) errorEl.classList.add('hidden');
+
+    hideLoginWall();
+    applyRBAC();
+    await initExchangeRate();
+    await refreshAll();
+
+    // Восстанавливаем роутинг
+    const hash = window.location.hash;
+    if (hash === '#cms' && authResult.user.role === 'admin') {
+      window.setAppMode('cms');
+    } else {
+      window.setAppMode('dashboard');
+    }
+
+    showToast(`✨ Добро пожаловать, ${authResult.user.name}!`, 'success');
+  } catch (err) {
+    if (errorEl) {
+      if (errorTextEl) errorTextEl.textContent = err.message || 'Неверный логин или пароль';
+      errorEl.classList.remove('hidden');
+    }
+    showToast('Ошибка входа: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i> <span>Войти в систему</span>`;
+      safeLucideIcons();
+    }
+  }
+};
+
+window.quickDemoLogin = async function(role) {
+  const username = (role === 'admin') ? 'admin' : 'user';
+  const password = username;
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  if (usernameInput) usernameInput.value = username;
+  if (passwordInput) passwordInput.value = password;
+
+  const submitBtn = document.getElementById('login-wall-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> <span>Вход...</span>`;
+  }
+
+  try {
+    const authResult = await getApi().login(username, password);
+    appState.currentUser = authResult.user;
+    hideLoginWall();
+    applyRBAC();
+    await initExchangeRate();
+    await refreshAll();
+    window.setAppMode('dashboard');
+    showToast(`✨ Авторизован: ${authResult.user.name} (${authResult.user.role.toUpperCase()})`, 'success');
+  } catch (err) {
+    showToast('Ошибка демо-входа: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i> <span>Войти в систему</span>`;
+      safeLucideIcons();
+    }
+  }
+};
+
+window.togglePasswordVisibility = function(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input) return;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    input.type = 'password';
+    if (icon) icon.setAttribute('data-lucide', 'eye');
+  }
+  safeLucideIcons();
+};
+
 window.logoutUserSession = async function() {
   try {
-    const guest = await getApi().logout();
-    appState.currentUser = guest;
-    applyRBAC();
-    window.closeAuthModal();
-    showToast('Вы вышли из системы (режим Гостя)', 'info');
-    await refreshAll();
+    await getApi().logout();
+    appState.currentUser = null;
+    if (typeof window.closeAllMenus === 'function') window.closeAllMenus();
+    if (typeof window.closeMobileDrawer === 'function') window.closeMobileDrawer();
+    if (typeof window.closeAuthModal === 'function') window.closeAuthModal();
+    showLoginWall();
+    showToast('Вы успешно вышли из системы', 'info');
   } catch (e) {
     showToast('Ошибка выхода: ' + e.message, 'error');
   }
