@@ -126,14 +126,19 @@ window.setAppCurrency = function(currency) {
 function updateCurrencySwitcherUI() {
   const bynBtn = document.getElementById('currency-byn-btn');
   const usdBtn = document.getElementById('currency-usd-btn');
-  if (!bynBtn || !usdBtn) return;
+  const mobBynBtn = document.getElementById('mobile-currency-byn-btn');
+  const mobUsdBtn = document.getElementById('mobile-currency-usd-btn');
 
   if (appState.activeCurrency === 'BYN') {
-    bynBtn.className = "px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm";
-    usdBtn.className = "px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
+    if (bynBtn) bynBtn.className = "px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm";
+    if (usdBtn) usdBtn.className = "px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
+    if (mobBynBtn) mobBynBtn.className = "py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm flex items-center justify-center gap-1";
+    if (mobUsdBtn) mobUsdBtn.className = "py-1.5 px-3 rounded-lg text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center justify-center gap-1";
   } else {
-    usdBtn.className = "px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm";
-    bynBtn.className = "px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
+    if (usdBtn) usdBtn.className = "px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm";
+    if (bynBtn) bynBtn.className = "px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
+    if (mobUsdBtn) mobUsdBtn.className = "py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm flex items-center justify-center gap-1";
+    if (mobBynBtn) mobBynBtn.className = "py-1.5 px-3 rounded-lg text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center justify-center gap-1";
   }
 }
 
@@ -191,16 +196,22 @@ function setupTheme() {
   const html = document.documentElement;
   const themeToggleBtn = document.getElementById('theme-toggle-btn');
   const themeIcon = document.getElementById('theme-icon');
+  const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+  const mobileThemeText = document.getElementById('mobile-theme-text');
 
   function applyTheme(isDark) {
     if (isDark) {
       html.classList.add('dark');
       localStorage.setItem('horizont_theme', 'dark');
       if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
+      if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'sun');
+      if (mobileThemeText) mobileThemeText.textContent = 'Светлая тема';
     } else {
       html.classList.remove('dark');
       localStorage.setItem('horizont_theme', 'light');
       if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
+      if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'moon');
+      if (mobileThemeText) mobileThemeText.textContent = 'Тёмная тема';
     }
     safeLucideIcons();
     if (appState.chartInstance) {
@@ -208,15 +219,53 @@ function setupTheme() {
     }
   }
 
+  window.toggleAppTheme = function() {
+    appState.isDarkMode = !appState.isDarkMode;
+    applyTheme(appState.isDarkMode);
+  };
+
   applyTheme(appState.isDarkMode);
 
   if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
-      appState.isDarkMode = !appState.isDarkMode;
-      applyTheme(appState.isDarkMode);
-    });
+    themeToggleBtn.addEventListener('click', window.toggleAppTheme);
   }
 }
+
+/**
+ * Управление выдвижным мобильным меню (Mobile Drawer / Google M3)
+ */
+window.openMobileDrawer = function() {
+  const drawer = document.getElementById('mobile-drawer');
+  const panel = document.getElementById('mobile-drawer-panel');
+  if (!drawer || !panel) return;
+  drawer.classList.remove('opacity-0', 'pointer-events-none');
+  drawer.classList.add('opacity-100');
+  panel.classList.remove('translate-x-full');
+  panel.classList.add('translate-x-0');
+  document.body.classList.add('overflow-hidden');
+  safeLucideIcons();
+};
+
+window.closeMobileDrawer = function() {
+  const drawer = document.getElementById('mobile-drawer');
+  const panel = document.getElementById('mobile-drawer-panel');
+  if (!drawer || !panel) return;
+  panel.classList.remove('translate-x-0');
+  panel.classList.add('translate-x-full');
+  drawer.classList.remove('opacity-100');
+  drawer.classList.add('opacity-0', 'pointer-events-none');
+  document.body.classList.remove('overflow-hidden');
+};
+
+window.toggleMobileDrawer = function() {
+  const drawer = document.getElementById('mobile-drawer');
+  if (!drawer) return;
+  if (drawer.classList.contains('pointer-events-none') || drawer.classList.contains('opacity-0')) {
+    window.openMobileDrawer();
+  } else {
+    window.closeMobileDrawer();
+  }
+};
 
 /**
  * Настройка глобальных обработчиков событий
@@ -293,6 +342,9 @@ function setupEventListeners() {
   const goalDetailView = document.getElementById('goal-detail-view');
 
   function setAppMode(mode) {
+    const mobModeDashBtn = document.getElementById('mobile-nav-dashboard-btn');
+    const mobModeCmsBtn = document.getElementById('mobile-nav-cms-btn');
+
     if (mode === 'cms') {
       const user = appState.currentUser || window.MockAPI.getCurrentUser();
       if (!user || user.role !== 'admin') {
@@ -314,6 +366,12 @@ function setupEventListeners() {
         modeDashboardBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
         modeDashboardBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
       }
+      if (mobModeCmsBtn) {
+        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-semibold text-xs flex items-center gap-2.5 transition-all bg-[#1A73E8] text-white shadow-sm";
+      }
+      if (mobModeDashBtn) {
+        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
+      }
       renderCMSSpheres();
       renderCMSGoals();
     } else if (mode === 'goal-detail') {
@@ -330,6 +388,12 @@ function setupEventListeners() {
         modeCmsBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
         modeCmsBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
       }
+      if (mobModeDashBtn) {
+        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
+      }
+      if (mobModeCmsBtn) {
+        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
+      }
     } else {
       appState.currentMode = 'dashboard';
       appState.activeGoalId = null;
@@ -344,6 +408,12 @@ function setupEventListeners() {
       if (modeCmsBtn) {
         modeCmsBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
         modeCmsBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
+      }
+      if (mobModeDashBtn) {
+        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-semibold text-xs flex items-center gap-2.5 transition-all bg-[#1A73E8] text-white shadow-sm";
+      }
+      if (mobModeCmsBtn) {
+        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
       }
       refreshAll();
     }
@@ -516,16 +586,23 @@ function setupEventListeners() {
     });
   }
 
-  // Кнопка сброса к демо-данным
+  // Кнопка сброса к демо-данным (доступна глобально для десктопа и мобильного ящика)
+  window.resetAppDemo = async function() {
+    if (confirm('Сбросить данные к исходным демо-значениям из базы данных?')) {
+      window.MockAPI.resetToDefaults();
+      showToast('Данные успешно сброшены к начальным значениям', 'info');
+      if (typeof window.closeMobileDrawer === 'function') {
+        window.closeMobileDrawer();
+      }
+      await refreshAll();
+      if (typeof renderCMSSpheres === 'function') renderCMSSpheres();
+      if (typeof renderCMSGoals === 'function') renderCMSGoals();
+    }
+  };
+
   const resetBtn = document.getElementById('reset-demo-btn');
   if (resetBtn) {
-    resetBtn.addEventListener('click', async () => {
-      if (confirm('Сбросить данные к исходным демо-значениям из базы данных?')) {
-        window.MockAPI.resetToDefaults();
-        showToast('Данные успешно сброшены к начальным значениям', 'info');
-        await refreshAll();
-      }
-    });
+    resetBtn.addEventListener('click', window.resetAppDemo);
   }
 
   setupPresetImages();
@@ -1953,37 +2030,57 @@ function applyRBAC() {
   const headerAvatar = document.getElementById('header-user-avatar');
   const headerName = document.getElementById('header-user-name');
   const headerBadge = document.getElementById('header-user-role-badge');
+  const mobAvatar = document.getElementById('mobile-user-avatar');
+  const mobName = document.getElementById('mobile-user-name');
+  const mobEmail = document.getElementById('mobile-user-email');
+  const mobBadge = document.getElementById('mobile-user-role-badge');
   const modeCmsBtn = document.getElementById('nav-mode-cms-btn');
+  const mobModeCmsBtn = document.getElementById('mobile-nav-cms-btn');
   const mobileModeToggleBtn = document.getElementById('mobile-mode-toggle-btn');
   const navContainer = document.getElementById('header-nav-mode-container');
 
-  // Обновление профиля в хедере
+  // Обновление профиля в хедере и мобильном ящике
   if (headerAvatar && currentUser.avatar_url) {
     headerAvatar.src = currentUser.avatar_url;
+  }
+  if (mobAvatar && currentUser.avatar_url) {
+    mobAvatar.src = currentUser.avatar_url;
   }
   if (headerName) {
     headerName.textContent = currentUser.name ? currentUser.name.split(' ')[0] : 'Профиль';
   }
+  if (mobName) {
+    mobName.textContent = currentUser.name || 'Пользователь';
+  }
+  if (mobEmail) {
+    mobEmail.textContent = currentUser.email || '';
+  }
+
+  const roleText = currentUser.role === 'admin' ? 'Admin' : (currentUser.role === 'user' ? 'User' : 'Guest');
+  const roleBadgeClass = currentUser.role === 'admin' 
+    ? 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+    : (currentUser.role === 'user'
+      ? 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+      : 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300');
+
   if (headerBadge) {
-    if (currentUser.role === 'admin') {
-      headerBadge.textContent = 'Admin';
-      headerBadge.className = 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
-    } else if (currentUser.role === 'user') {
-      headerBadge.textContent = 'User';
-      headerBadge.className = 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300';
-    } else {
-      headerBadge.textContent = 'Guest';
-      headerBadge.className = 'px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300';
-    }
+    headerBadge.textContent = roleText;
+    headerBadge.className = roleBadgeClass;
+  }
+  if (mobBadge) {
+    mobBadge.textContent = roleText;
+    mobBadge.className = roleBadgeClass;
   }
 
   // Ролевое скрытие/отображение кнопки CMS
   if (currentUser.role === 'admin') {
     if (modeCmsBtn) modeCmsBtn.classList.remove('hidden');
+    if (mobModeCmsBtn) mobModeCmsBtn.classList.remove('hidden');
     if (mobileModeToggleBtn) mobileModeToggleBtn.classList.remove('hidden');
     if (navContainer) navContainer.classList.remove('hidden');
   } else {
     if (modeCmsBtn) modeCmsBtn.classList.add('hidden');
+    if (mobModeCmsBtn) mobModeCmsBtn.classList.add('hidden');
     if (mobileModeToggleBtn) mobileModeToggleBtn.classList.add('hidden');
     // Если пользователь был в режиме CMS, принудительно возвращаем на дашборд
     if (appState.currentMode === 'cms' || (document.getElementById('cms-view') && !document.getElementById('cms-view').classList.contains('hidden'))) {
