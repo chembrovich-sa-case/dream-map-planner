@@ -20,7 +20,13 @@
 
 ```mermaid
 flowchart TD
-    User["👤 Пользователь (Браузер / Смартфон)"]
+    User["👤 Пользователь (Браузер / Смартфон / Telegram)"]
+
+    subgraph TelegramClient ["🤖 Telegram-бот (aiogram 3)"]
+        BotApp["Telegram Bot (bot/main.py)"]
+        BotHandlers["Обработчики команд (bot/handlers.py)"]
+        BotApi["API-клиент (bot/api_client.py)"]
+    end
 
     subgraph Frontend ["🖥 Фронтенд (Vanilla JS SPA)"]
         UI["Интерфейс (Material Design 3 & Tailwind)"]
@@ -37,7 +43,7 @@ flowchart TD
         SpheresRouter["Роутер Сфер Баланса (/api/spheres)"]
         GoalsRouter["Роутер Целей и Шагов (/api/goals)"]
         CurrencyRouter["Роутер Валют НБРБ (/api/currency)"]
-        AnalyticsRouter["Роутер Срезов Баланса (/api/analytics)"]
+        AnalyticsRouter["Роутер Срезов & PDF (/api/analytics)"]
     end
 
     subgraph DB ["🗄 База данных"]
@@ -46,6 +52,11 @@ flowchart TD
     end
 
     User --> UI
+    User -->|Команды /status, /goals, /newgoal| BotApp
+    BotApp --> BotHandlers
+    BotHandlers --> BotApi
+    BotApi -->|JWT Bearer REST API| FastAPIApp
+
     UI --> Router
     Router --> Charts
     Router --> ApiClient
@@ -121,7 +132,7 @@ Horizont/
 ├── backend/                         # Серверная часть (Python / FastAPI)
 │   ├── routers/                     # Модульные REST-роутеры
 │   │   ├── admin.py                 # Ручной provisioning пользователей (Admin Only CRUD)
-│   │   ├── analytics.py             # Срезы баланса и тренды (balance_snapshots)
+│   │   ├── analytics.py             # Срезы баланса, тренды и экспорт PDF
 │   │   ├── auth.py                  # Аутентификация, строгая JWT-валидация и RBAC
 │   │   ├── currency.py              # Курсы валют НБРБ и конвертация (BYN ⇄ USD)
 │   │   ├── goals.py                 # Карточки целей, декомпозиция и чек-листы
@@ -129,10 +140,19 @@ Horizont/
 │   ├── database.py                  # Подключение SQLAlchemy (PostgreSQL/SQLite) + Clean Production сидер
 │   ├── main.py                      # Точка входа FastAPI, CORS, Swagger UI, Health Check
 │   ├── models.py                    # ORM-модели (User, LifeSphere, GoalCard, BalanceSnapshot...)
-│   ├── requirements.txt             # Зависимости Python (FastAPI, SQLAlchemy, Pydantic v2...)
+│   ├── pdf_service.py               # Генератор корпоративных отчетов PDF (ReportLab, кириллица)
+│   ├── requirements.txt             # Зависимости Python (FastAPI, SQLAlchemy, ReportLab...)
 │   ├── schemas.py                   # Схемы валидации входящих/исходящих данных (DTO)
 │   ├── security.py                  # Хэширование паролей (bcrypt/SHA-256) и выпуск/проверка JWT
 │   └── README.md                    # Инструкция по локальному запуску бэкенда
+├── bot/                             # Телеграм-бот ассистент (Python / aiogram 3)
+│   ├── main.py                      # Точка входа бота, асинхронный поллинг и команды
+│   ├── handlers.py                  # Обработчики команд (/start, /status, /goals, /newgoal) и FSM
+│   ├── api_client.py                # Клиент к FastAPI (JWT Bearer, расчет гармонии и бюджетов)
+│   ├── config.py                    # Конфигурация токенов и переменных окружения
+│   ├── requirements.txt             # Зависимости бота (aiogram 3, httpx, pydantic...)
+│   ├── .env.example                 # Шаблон файла конфигурации
+│   └── README.md                    # Руководство по настройке и запуску бота
 ├── database/
 │   └── schema.sql                   # Эталонная реляционная схема PostgreSQL в 3NF (DDL, триггеры, сид)
 ├── docs/
@@ -180,6 +200,7 @@ Horizont/
 | `GET` | `/api/analytics/snapshots` | Все | История срезов баланса за период (`?days=30`, `?days=90`) |
 | `POST`| `/api/analytics/snapshots` | Все | Фиксация моментального среза баланса жизни в БД |
 | `GET` | `/api/analytics/trend` | Все | Подготовленный временной ряд для графиков Chart.js |
+| `GET` | `/api/analytics/export-pdf` | Все | Экспорт официального корпоративного PDF-отчета резидента |
 | `DELETE`| `/api/analytics/snapshots/{id}` | Все / Admin | Удаление среза баланса |
 | `GET` | `/api/currency/rates` | Все | Официальный курс USD/BYN с суточным кэшированием в БД |
 | `POST`| `/api/currency/refresh` | Все | Принудительное обновление курса из API Нацбанка РБ |
@@ -225,7 +246,38 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-### 3. Автоматический деплой и синхронизация с GitHub
+### 3. Запуск Телеграм-бота (aiogram 3)
+
+```bash
+# 1. Перейдите в папку бота
+cd bot
+
+# 2. Создайте и активируйте виртуальное окружение
+python -m venv venv
+.\venv\Scripts\activate      # Windows (CMD / PowerShell)
+# source venv/bin/activate   # Linux / macOS
+
+# 3. Установите зависимости бота
+pip install -r requirements.txt
+
+# 4. Настройте файл .env (укажите BOT_TOKEN от @BotFather)
+copy .env.example .env
+
+# 5. Запустите бота
+python main.py
+```
+
+После запуска в Telegram доступны команды:
+* `/start` — приветствие и быстрый вход;
+* `/status` — сводка колеса баланса, гармония %, список сфер и бюджеты в Br / USD;
+* `/goals` — просмотр списка целей и прогресса;
+* `/newgoal` — пошаговое создание цели из диалога Telegram.
+
+Подробная инструкция: [bot/README.md](bot/README.md).
+
+---
+
+### 4. Автоматический деплой и синхронизация с GitHub
 
 Для синхронизации кода и мгновенного обновления GitHub Pages предусмотрен скрипт:
 
