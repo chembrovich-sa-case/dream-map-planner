@@ -505,6 +505,83 @@
     resetToDefaults() {
       if (window.MockAPI) return window.MockAPI.resetToDefaults();
     }
+
+    // ============================================================================
+    // 6. СРЕЗЫ БАЛАНСА И ИСТОРИЧЕСКАЯ АНАЛИТИКА (BALANCE SNAPSHOTS & TRENDS)
+    // ============================================================================
+
+    async getSnapshots({ days = null, limit = 50 } = {}) {
+      let query = [];
+      if (days) query.push(`days=${encodeURIComponent(days)}`);
+      if (limit) query.push(`limit=${encodeURIComponent(limit)}`);
+      const endpoint = `/analytics/snapshots${query.length ? '?' + query.join('&') : ''}`;
+
+      const data = await this.request(endpoint);
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      if (window.MockAPI) {
+        return await window.MockAPI.getSnapshots({ days, limit });
+      }
+      return [];
+    }
+
+    async getAnalyticsTrend({ days = null } = {}) {
+      let endpoint = '/analytics/trend';
+      if (days) endpoint += `?days=${encodeURIComponent(days)}`;
+
+      const data = await this.request(endpoint);
+      if (data && data.harmony_series && Array.isArray(data.labels)) {
+        return data;
+      }
+
+      if (window.MockAPI) {
+        return await window.MockAPI.getAnalyticsTrend({ days });
+      }
+      return {
+        labels: [],
+        dates: [],
+        harmony_series: [],
+        spheres_series: [],
+        snapshots_count: 0,
+        current_harmony_index: 0.5,
+        earliest_harmony_index: 0.5,
+        improvement_delta: 0,
+        improvement_percent: 0
+      };
+    }
+
+    async createSnapshot({ notes = null, items = null } = {}) {
+      const data = await this.request('/analytics/snapshots', {
+        method: 'POST',
+        body: JSON.stringify({ notes, items })
+      });
+
+      if (data && data.id) {
+        return data;
+      }
+
+      if (window.MockAPI) {
+        return await window.MockAPI.createSnapshot({ notes, items });
+      }
+      throw new Error("Не удалось создать срез баланса");
+    }
+
+    async deleteSnapshot(id) {
+      const data = await this.request(`/analytics/snapshots/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (data) {
+        return { success: true };
+      }
+
+      if (window.MockAPI) {
+        return await window.MockAPI.deleteSnapshot(id);
+      }
+      throw new Error("Не удалось удалить срез");
+    }
   }
 
   // Экспортируем глобальный экземпляр клиента

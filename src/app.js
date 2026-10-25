@@ -9,6 +9,8 @@ const appState = {
   selectedStatus: 'all',
   searchQuery: '',
   chartInstance: null,
+  historyChartInstance: null,
+  historyPeriodDays: null,
   activeCurrency: localStorage.getItem('horizont_currency') || 'BYN',
   fxRate: 2.9543,
   fxRateData: null,
@@ -631,6 +633,7 @@ async function refreshAll() {
   try {
     await Promise.all([
       renderRadarAndAnalytics(),
+      renderBalanceHistoryChart(),
       renderSpheresFilterBar(),
       renderGoals(),
       updateTotalGoalsBudget()
@@ -828,18 +831,215 @@ function renderRadarChart(sectors) {
 }
 
 function updateChartTheme() {
-  if (!appState.chartInstance) return;
   const isDark = document.documentElement.classList.contains('dark');
-  const gridColor = isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(218, 220, 224, 0.6)';
-  const angleLineColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(218, 220, 224, 0.8)';
-  const labelColor = isDark ? '#E2E8F0' : '#202124';
+  if (appState.chartInstance) {
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(218, 220, 224, 0.6)';
+    const angleLineColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(218, 220, 224, 0.8)';
+    const labelColor = isDark ? '#E2E8F0' : '#202124';
 
-  appState.chartInstance.options.scales.r.grid.color = gridColor;
-  appState.chartInstance.options.scales.r.angleLines.color = angleLineColor;
-  appState.chartInstance.options.scales.r.pointLabels.color = labelColor;
-  appState.chartInstance.options.scales.r.ticks.color = isDark ? '#94A3B8' : '#5F6368';
-  appState.chartInstance.update();
+    appState.chartInstance.options.scales.r.grid.color = gridColor;
+    appState.chartInstance.options.scales.r.angleLines.color = angleLineColor;
+    appState.chartInstance.options.scales.r.pointLabels.color = labelColor;
+    appState.chartInstance.options.scales.r.ticks.color = isDark ? '#94A3B8' : '#5F6368';
+    appState.chartInstance.update();
+  }
+
+  if (appState.historyChartInstance) {
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(218, 220, 224, 0.5)';
+    const tickColor = isDark ? '#94A3B8' : '#5F6368';
+    appState.historyChartInstance.options.scales.x.grid.color = gridColor;
+    appState.historyChartInstance.options.scales.x.ticks.color = tickColor;
+    appState.historyChartInstance.options.scales.y.grid.color = gridColor;
+    appState.historyChartInstance.options.scales.y.ticks.color = tickColor;
+    appState.historyChartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : '#202124';
+    appState.historyChartInstance.update();
+  }
 }
+
+/**
+ * Рендеринг линейного графика динамики гармонии во времени (balance_snapshots)
+ */
+async function renderBalanceHistoryChart() {
+  const canvas = document.getElementById('balanceHistoryChartCanvas');
+  if (!canvas) return;
+
+  try {
+    const trendData = await getApi().getAnalyticsTrend({ days: appState.historyPeriodDays });
+
+    // Обновляем бейдж прироста гармонии
+    const growthBadge = document.getElementById('history-growth-badge');
+    if (growthBadge) {
+      const delta = trendData.improvement_delta;
+      const sign = delta > 0 ? '+' : '';
+      growthBadge.textContent = `${sign}${delta}%`;
+      if (delta > 0) {
+        growthBadge.className = "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300";
+      } else if (delta < 0) {
+        growthBadge.className = "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
+      } else {
+        growthBadge.className = "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300";
+      }
+    }
+
+    // Обновляем счетчик срезов и последнюю заметку
+    const countEl = document.getElementById('history-snapshots-count');
+    if (countEl) {
+      countEl.textContent = `Всего срезов: ${trendData.snapshots_count}`;
+    }
+
+    const noteEl = document.getElementById('history-latest-snapshot-note');
+    if (noteEl) {
+      const lastDate = trendData.dates && trendData.dates.length 
+        ? new Date(trendData.dates[trendData.dates.length - 1]).toLocaleDateString('ru-RU') 
+        : 'сегодня';
+      noteEl.textContent = `Текущий индекс: ${Math.round(trendData.current_harmony_index * 100)}% (срез от ${lastDate})`;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(218, 220, 224, 0.5)';
+    const tickColor = isDark ? '#94A3B8' : '#5F6368';
+
+    // Градиент заливки под кривой тренда
+    const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+    gradient.addColorStop(0, 'rgba(26, 115, 232, 0.35)');
+    gradient.addColorStop(1, 'rgba(26, 115, 232, 0.00)');
+
+    const chartData = {
+      labels: trendData.labels || [],
+      datasets: [
+        {
+          label: 'Индекс гармонии (%)',
+          data: trendData.harmony_series || [],
+          borderColor: '#1A73E8',
+          backgroundColor: gradient,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#1A73E8',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4.5,
+          pointHoverRadius: 7,
+          pointHoverBackgroundColor: '#1557B0',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2.5
+        }
+      ]
+    };
+
+    if (appState.historyChartInstance) {
+      appState.historyChartInstance.data = chartData;
+      appState.historyChartInstance.options.scales.x.grid.color = gridColor;
+      appState.historyChartInstance.options.scales.x.ticks.color = tickColor;
+      appState.historyChartInstance.options.scales.y.grid.color = gridColor;
+      appState.historyChartInstance.options.scales.y.ticks.color = tickColor;
+      appState.historyChartInstance.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : '#202124';
+      appState.historyChartInstance.update();
+      return;
+    }
+
+    appState.historyChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          x: {
+            grid: {
+              color: gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              color: tickColor,
+              font: { family: 'Inter', size: 11 }
+            }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 20,
+              color: tickColor,
+              font: { family: 'Inter', size: 11 },
+              callback: function(value) {
+                return value + '%';
+              }
+            },
+            grid: {
+              color: gridColor,
+              drawBorder: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: isDark ? '#1E293B' : '#202124',
+            titleFont: { family: 'Plus Jakarta Sans', weight: 'bold', size: 12 },
+            bodyFont: { family: 'Inter', size: 12 },
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return ` Индекс гармонии: ${context.parsed.y}%`;
+              }
+            }
+          }
+        },
+        animation: {
+          duration: 400,
+          easing: 'easeOutQuart'
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Ошибка построения графика истории баланса:", err);
+  }
+}
+
+/**
+ * Переключение временного диапазона срезов
+ */
+window.setHistoryPeriod = function(days) {
+  appState.historyPeriodDays = days;
+  const btnAll = document.getElementById('history-period-all');
+  const btn30 = document.getElementById('history-period-30');
+  const btn90 = document.getElementById('history-period-90');
+
+  const activeClass = "px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-[#1F2937] text-[#1A73E8] shadow-xs transition-all";
+  const inactiveClass = "px-2.5 py-1 rounded-md font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all";
+
+  if (btnAll) btnAll.className = (days === null) ? activeClass : inactiveClass;
+  if (btn30) btn30.className = (days === 30) ? activeClass : inactiveClass;
+  if (btn90) btn90.className = (days === 90) ? activeClass : inactiveClass;
+
+  renderBalanceHistoryChart();
+};
+
+/**
+ * Ручная фиксация среза баланса жизни (balance_snapshots)
+ */
+window.takeBalanceSnapshot = async function() {
+  const defaultNote = `Срез от ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+  const note = prompt("Заметка к срезу баланса жизни (например, итоги недели):", defaultNote);
+  if (note === null) return;
+
+  try {
+    const snapshot = await getApi().createSnapshot({ notes: note.trim() || defaultNote });
+    showToast("📸 Срез баланса успешно зафиксирован!", "success");
+    await renderBalanceHistoryChart();
+  } catch (e) {
+    showToast("Ошибка сохранения среза: " + e.message, "error");
+  }
+};
 
 /**
  * Чипсы фильтрации по сферам жизни (Material 3)

@@ -144,3 +144,9 @@ FastAPI автоматически строит и валидирует инте
 * `GET /api/currency/rates` — получение актуального курса USD/BYN с суточным кэшированием.
 * `POST /api/currency/refresh` — принудительный опрос API `api.nbrb.by`.
 * `POST /api/currency/convert` — конвертация бюджетов целей между BYN и USD.
+
+### 6. Аналитика и Исторические срезы баланса (balance_snapshots)
+* `POST /api/analytics/snapshots` — создание точки фиксации среза колеса баланса в БД с авто-расчетом индекса гармонии.
+* `GET /api/analytics/snapshots` — получение истории замеров за указанный период (`days`).
+* `GET /api/analytics/trend` — готовый временной ряд для построения графиков динамики в Chart.js.
+* `DELETE /api/analytics/snapshots/{id}` — удаление среза баланса.

@@ -60,8 +60,8 @@ def seed_initial_data(db: Session):
     """
     Наполнение БД начальными демо-данными из схемы schema.sql, если таблицы пусты.
     """
-    from models import User, LifeSphere, GoalCard, GoalStep, ExchangeRateCache
-    from datetime import date
+    from models import User, LifeSphere, GoalCard, GoalStep, ExchangeRateCache, BalanceSnapshot, BalanceSnapshotItem
+    from datetime import date, datetime, timezone, timedelta
 
     # 1. Проверяем наличие пользователей
     if db.query(User).first() is not None:
@@ -289,6 +289,60 @@ def seed_initial_data(db: Session):
         rate_date=date.today()
     )
     db.merge(fx)
+
+    # 6. Исторические срезы колеса баланса (balance_snapshots & balance_snapshot_items)
+    now_utc = datetime.now(timezone.utc)
+    snapshots_history = [
+        {
+            "id": uuid.UUID("e0000000-0000-0000-0000-000000000001"),
+            "days_ago": 30,
+            "harmony": 0.65,
+            "notes": "Стартовая оценка баланса перед началом года",
+            "scores": [4.0, 3.5, 3.0, 6.0, 4.0, 3.0]
+        },
+        {
+            "id": uuid.UUID("e0000000-0000-0000-0000-000000000002"),
+            "days_ago": 20,
+            "harmony": 0.72,
+            "notes": "Прогресс в карьере и регулярные тренировки",
+            "scores": [5.5, 4.0, 4.5, 6.5, 5.0, 3.5]
+        },
+        {
+            "id": uuid.UUID("e0000000-0000-0000-0000-000000000003"),
+            "days_ago": 10,
+            "harmony": 0.79,
+            "notes": "Повышение дохода и закрытие чек-листов",
+            "scores": [6.5, 6.0, 5.0, 7.5, 5.5, 4.0]
+        },
+        {
+            "id": uuid.UUID("e0000000-0000-0000-0000-000000000004"),
+            "days_ago": 0,
+            "harmony": 0.85,
+            "notes": "Текущее гармоничное состояние колеса",
+            "scores": [7.5, 7.0, 5.0, 8.0, 6.0, 4.5]
+        }
+    ]
+
+    sphere_ids = [s["id"] for s in spheres_data]
+    for sn_data in snapshots_history:
+        snapshot = BalanceSnapshot(
+            id=sn_data["id"],
+            user_id=admin_id,
+            overall_harmony_index=sn_data["harmony"],
+            notes=sn_data["notes"],
+            recorded_at=now_utc - timedelta(days=sn_data["days_ago"])
+        )
+        db.add(snapshot)
+        db.flush()
+
+        for s_idx, sp_id in enumerate(sphere_ids):
+            item = BalanceSnapshotItem(
+                snapshot_id=snapshot.id,
+                sphere_id=sp_id,
+                score=sn_data["scores"][s_idx],
+                target_score=10.0
+            )
+            db.add(item)
 
     db.commit()
     print("✅ База данных успешно инициализирована демо-данными!")

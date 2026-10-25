@@ -374,6 +374,72 @@ const DEFAULT_STATE = {
         }
       ]
     }
+  ],
+  balance_snapshots: [
+    {
+      id: "e0000000-0000-0000-0000-000000000001",
+      user_id: "a0000000-0000-0000-0000-000000000001",
+      overall_harmony_index: 0.65,
+      notes: "Стартовая оценка баланса перед началом года",
+      recorded_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      items: [
+        { id: "f0000000-0000-0000-0000-000000000001", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 4.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000002", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 3.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000003", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 3.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000004", sphere_id: "b0000000-0000-0000-0000-000000000004", score: 6.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000005", sphere_id: "b0000000-0000-0000-0000-000000000005", score: 4.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000006", sphere_id: "b0000000-0000-0000-0000-000000000006", score: 3.0, target_score: 10.0 }
+      ]
+    },
+    {
+      id: "e0000000-0000-0000-0000-000000000002",
+      user_id: "a0000000-0000-0000-0000-000000000001",
+      overall_harmony_index: 0.72,
+      notes: "Прогресс в карьере и регулярные тренировки",
+      recorded_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      items: [
+        { id: "f0000000-0000-0000-0000-000000000007", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 5.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000008", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 4.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000009", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 4.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000010", sphere_id: "b0000000-0000-0000-0000-000000000004", score: 6.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000011", sphere_id: "b0000000-0000-0000-0000-000000000005", score: 5.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000012", sphere_id: "b0000000-0000-0000-0000-000000000006", score: 3.5, target_score: 10.0 }
+      ]
+    },
+    {
+      id: "e0000000-0000-0000-0000-000000000003",
+      user_id: "a0000000-0000-0000-0000-000000000001",
+      overall_harmony_index: 0.79,
+      notes: "Повышение дохода и закрытие чек-листов",
+      recorded_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      items: [
+        { id: "f0000000-0000-0000-0000-000000000013", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 6.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000014", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 6.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000015", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 5.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000016", sphere_id: "b0000000-0000-0000-0000-000000000004", score: 7.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000017", sphere_id: "b0000000-0000-0000-0000-000000000005", score: 5.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000018", sphere_id: "b0000000-0000-0000-0000-000000000006", score: 4.0, target_score: 10.0 }
+      ]
+    },
+    {
+      id: "e0000000-0000-0000-0000-000000000004",
+      user_id: "a0000000-0000-0000-0000-000000000001",
+      overall_harmony_index: 0.85,
+      notes: "Текущее гармоничное состояние колеса",
+      recorded_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      items: [
+        { id: "f0000000-0000-0000-0000-000000000019", sphere_id: "b0000000-0000-0000-0000-000000000001", score: 6.7, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000020", sphere_id: "b0000000-0000-0000-0000-000000000002", score: 7.5, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000021", sphere_id: "b0000000-0000-0000-0000-000000000003", score: 5.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000022", sphere_id: "b0000000-0000-0000-0000-000000000004", score: 8.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000023", sphere_id: "b0000000-0000-0000-0000-000000000005", score: 6.0, target_score: 10.0 },
+        { id: "f0000000-0000-0000-0000-000000000024", sphere_id: "b0000000-0000-0000-0000-000000000006", score: 4.5, target_score: 10.0 }
+      ]
+    }
   ]
 };
 
@@ -415,6 +481,9 @@ class MockDatabase {
             });
           }
         });
+        if (!this.state.balance_snapshots || !Array.isArray(this.state.balance_snapshots) || this.state.balance_snapshots.length === 0) {
+          this.state.balance_snapshots = JSON.parse(JSON.stringify(DEFAULT_STATE.balance_snapshots));
+        }
       } catch (e) {
         console.error("Ошибка парсинга localStorage, сброс к дефолту:", e);
         this.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -861,6 +930,139 @@ window.MockAPI = {
       evaluated_at: new Date().toISOString(),
       sectors: sectors
     };
+  },
+
+  // ============================================================================
+  // ИСТОРИЧЕСКИЕ СРЕЗЫ БАЛАНСА И АНАЛИТИКА (BALANCE SNAPSHOTS & TRENDS)
+  // ============================================================================
+
+  async getSnapshots({ days = null, limit = 50 } = {}) {
+    let list = db.state.balance_snapshots || [];
+    if (days) {
+      const since = Date.now() - days * 86400000;
+      list = list.filter(sn => new Date(sn.recorded_at).getTime() >= since);
+    }
+    const sphereMap = {};
+    db.state.spheres.forEach(s => { sphereMap[s.id] = s; });
+
+    const enriched = list.map(sn => ({
+      ...sn,
+      items: (sn.items || []).map(it => {
+        const s = sphereMap[it.sphere_id];
+        return {
+          ...it,
+          sphere_title: s ? s.title : "Сфера",
+          sphere_color: s ? s.color : "#3B82F6",
+          sphere_icon: s ? s.icon : "compass"
+        };
+      })
+    }));
+
+    enriched.sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+    return enriched.slice(0, limit);
+  },
+
+  async getAnalyticsTrend({ days = null } = {}) {
+    const snapshots = await this.getSnapshots({ days, limit: 100 });
+    const spheres = db.state.spheres;
+    const labels = [];
+    const dates = [];
+    const harmony_series = [];
+    const spheres_dict = {};
+
+    spheres.forEach(s => {
+      spheres_dict[s.id] = {
+        sphere_id: s.id,
+        title: s.title,
+        color: s.color,
+        icon: s.icon,
+        scores: []
+      };
+    });
+
+    snapshots.forEach(sn => {
+      const d = new Date(sn.recorded_at);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      labels.push(`${day}.${month}`);
+      dates.push(sn.recorded_at);
+      harmony_series.push(Math.round((Number(sn.overall_harmony_index) || 0.5) * 100 * 10) / 10);
+
+      const itemsMap = {};
+      (sn.items || []).forEach(it => { itemsMap[it.sphere_id] = Number(it.score); });
+      spheres.forEach(s => {
+        const val = itemsMap[s.id] !== undefined ? itemsMap[s.id] : s.current_score;
+        spheres_dict[s.id].scores.push(Math.round(val * 10) / 10);
+      });
+    });
+
+    const cur_h = harmony_series.length ? harmony_series[harmony_series.length - 1] : 50;
+    const earliest_h = harmony_series.length ? harmony_series[0] : 50;
+    const delta = Math.round((cur_h - earliest_h) * 10) / 10;
+    const percent_growth = earliest_h > 0 ? Math.round(((cur_h - earliest_h) / earliest_h * 100) * 10) / 10 : 0;
+
+    return {
+      labels,
+      dates,
+      harmony_series,
+      spheres_series: Object.values(spheres_dict),
+      snapshots_count: snapshots.length,
+      current_harmony_index: Math.round((cur_h / 100) * 100) / 100,
+      earliest_harmony_index: Math.round((earliest_h / 100) * 100) / 100,
+      improvement_delta: delta,
+      improvement_percent: percent_growth
+    };
+  },
+
+  async createSnapshot({ notes = null, items = null } = {}) {
+    db.recalculateAll();
+    const spheres = db.state.spheres;
+    const user = this.getCurrentUser();
+    const harmony = db.calculateOverallHarmonyIndex();
+    const now = new Date().toISOString();
+
+    let snapshotItems = [];
+    if (items && Array.isArray(items) && items.length > 0) {
+      snapshotItems = items.map((it, idx) => ({
+        id: "f" + String(Date.now() + idx).padStart(31, '0'),
+        sphere_id: it.sphere_id,
+        score: Number(it.score) || 0,
+        target_score: Number(it.target_score) || 10
+      }));
+    } else {
+      snapshotItems = spheres.map((s, idx) => ({
+        id: "f" + String(Date.now() + idx).padStart(31, '0'),
+        sphere_id: s.id,
+        score: s.current_score,
+        target_score: s.target_score
+      }));
+    }
+
+    const newSnapshot = {
+      id: "e" + String(Date.now()).padStart(31, '0'),
+      user_id: user.id,
+      overall_harmony_index: harmony,
+      notes: notes || `Срез баланса от ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
+      recorded_at: now,
+      created_at: now,
+      items: snapshotItems
+    };
+
+    if (!db.state.balance_snapshots) db.state.balance_snapshots = [];
+    db.state.balance_snapshots.push(newSnapshot);
+    db.save();
+
+    return newSnapshot;
+  },
+
+  async deleteSnapshot(id) {
+    if (!db.state.balance_snapshots) return { success: true };
+    const idx = db.state.balance_snapshots.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      db.state.balance_snapshots.splice(idx, 1);
+      db.save();
+    }
+    return { success: true };
   },
 
   // Экспорт всей базы в JSON (CMS Backup)

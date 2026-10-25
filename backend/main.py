@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from database import engine, get_db, init_db
 from schemas import HealthResponse
-from routers import auth, spheres, goals, currency
+from routers import auth, spheres, goals, currency, analytics
 
 
 @asynccontextmanager
@@ -51,6 +51,10 @@ tags_metadata = [
     {
         "name": "Currency & FX (НБРБ)",
         "description": "Официальные курсы валют Нацбанка РБ (BYN/USD), суточный кэш и конвертация."
+    },
+    {
+        "name": "Analytics & Balance Snapshots (История и срезы)",
+        "description": "Срезы баланса жизни во времени (balance_snapshots), расчет индекса гармонии и исторические тренды."
     }
 ]
 
@@ -92,6 +96,7 @@ app.include_router(auth.router)
 app.include_router(spheres.router)
 app.include_router(goals.router)
 app.include_router(currency.router)
+app.include_router(analytics.router)
 
 
 # ============================================================================

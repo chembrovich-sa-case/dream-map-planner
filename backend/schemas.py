@@ -226,3 +226,65 @@ class CurrencyConvertResponse(BaseModel):
     rate: Decimal
     converted_amount: Decimal
     rate_date: date
+
+
+# ============================================================================
+# 7. СРЕЗЫ БАЛАНСА И АНАЛИТИКА (BALANCE SNAPSHOTS & TRENDS)
+# ============================================================================
+
+class BalanceSnapshotItemBase(BaseModel):
+    sphere_id: uuid.UUID
+    score: Decimal = Field(..., ge=0.0, le=10.0, example=7.5)
+    target_score: Decimal = Field(Decimal("10.0"), ge=0.0, le=10.0, example=10.0)
+
+
+class BalanceSnapshotItemCreate(BalanceSnapshotItemBase):
+    pass
+
+
+class BalanceSnapshotItemResponse(BalanceSnapshotItemBase):
+    id: uuid.UUID
+    snapshot_id: uuid.UUID
+    sphere_title: Optional[str] = None
+    sphere_color: Optional[str] = None
+    sphere_icon: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BalanceSnapshotCreate(BaseModel):
+    notes: Optional[str] = Field(None, example="Регулярный срез колеса баланса")
+    recorded_at: Optional[datetime] = None
+    items: Optional[List[BalanceSnapshotItemCreate]] = None
+
+
+class BalanceSnapshotResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    overall_harmony_index: Optional[Decimal] = None
+    notes: Optional[str] = None
+    recorded_at: datetime
+    created_at: datetime
+    items: List[BalanceSnapshotItemResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AnalyticsSphereSeries(BaseModel):
+    sphere_id: uuid.UUID
+    title: str
+    color: str
+    icon: str
+    scores: List[float]
+
+
+class AnalyticsTrendResponse(BaseModel):
+    labels: List[str]
+    dates: List[str]
+    harmony_series: List[float]
+    spheres_series: List[AnalyticsSphereSeries]
+    snapshots_count: int
+    current_harmony_index: float
+    earliest_harmony_index: float
+    improvement_delta: float
+    improvement_percent: float
