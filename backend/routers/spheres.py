@@ -132,10 +132,10 @@ def update_sphere(
             detail=f"Сфера с ID {sphere_id} не найдена"
         )
 
-    if current_user.role != "admin" and sphere.user_id != current_user.id:
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав для редактирования данной сферы"
+            detail="Редактирование справочника сфер доступно только администраторам системы"
         )
 
     update_data = sphere_in.model_dump(exclude_unset=True)
@@ -166,10 +166,10 @@ def delete_sphere(
             detail=f"Сфера с ID {sphere_id} не найдена"
         )
 
-    if current_user.role != "admin" and sphere.user_id != current_user.id:
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав для удаления данной сферы"
+            detail="Удаление сфер доступно только администраторам системы"
         )
 
     db.delete(sphere)

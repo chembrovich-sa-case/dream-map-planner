@@ -670,6 +670,12 @@ window.MockAPI = {
   getDemoUsers() {
     return DEMO_USERS;
   },
+  checkAdmin() {
+    const user = this.getCurrentUser();
+    if (!user || user.role !== 'admin') {
+      throw new Error("403 Forbidden: Операция доступна только администраторам системы");
+    }
+  },
   // GET /spheres
   async getSpheres() {
     return db.state.spheres.map(s => {
@@ -683,6 +689,7 @@ window.MockAPI = {
 
   // POST /spheres
   async createSphere(sphereData) {
+    this.checkAdmin();
     const newSphere = {
       id: generateSafeUUID('b'),
       user_id: "a0000000-0000-0000-0000-000000000001",
@@ -701,6 +708,7 @@ window.MockAPI = {
 
   // PATCH /spheres/{id}
   async updateSphere(id, updateData) {
+    this.checkAdmin();
     const sphere = db.state.spheres.find(s => s.id === id);
     if (!sphere) throw new Error("Сфера жизни не найдена");
 
@@ -719,6 +727,7 @@ window.MockAPI = {
 
   // DELETE /spheres/{id}
   async deleteSphere(id) {
+    this.checkAdmin();
     const idx = db.state.spheres.findIndex(s => s.id === id);
     if (idx === -1) throw new Error("Сфера жизни не найдена");
 
