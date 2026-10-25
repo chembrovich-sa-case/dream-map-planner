@@ -12,12 +12,15 @@ const appState = {
   activeCurrency: localStorage.getItem('horizont_currency') || 'BYN',
   fxRate: 2.9543,
   fxRateData: null,
-  currentUser: window.MockAPI ? window.MockAPI.getCurrentUser() : null,
+  currentUser: (window.API && window.API.getCurrentUser()) || (window.MockAPI ? window.MockAPI.getCurrentUser() : null),
   currentMode: 'dashboard',
   activeGoalId: null,
   isDarkMode: localStorage.getItem('horizont_theme') === 'dark' || 
               (!('horizont_theme' in localStorage) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
 };
+
+// Единый интерфейс API клиента (FastAPI бэкенд с автоматическим мягким фолбэком на MockAPI)
+const getApi = () => window.API || window.MockAPI;
 
 // Безопасный вызов иконок Lucide
 function safeLucideIcons() {
@@ -36,6 +39,12 @@ function safeLucideIcons() {
 async function startApp() {
   setupTheme();
   setupEventListeners();
+
+  // Проверка доступности FastAPI бэкенда (с мягким переключением на локальный оффлайн-кэш)
+  if (window.API && typeof window.API.checkHealth === 'function') {
+    await window.API.checkHealth();
+  }
+
   applyRBAC();
   await initExchangeRate();
   await refreshAll();
@@ -81,7 +90,7 @@ if (document.readyState === 'loading') {
  */
 async function initExchangeRate() {
   try {
-    const fx = await window.MockAPI.getNbrbRate(false);
+    const fx = await getApi().getNbrbRate(false);
     appState.fxRateData = fx;
     appState.fxRate = fx.rate || 2.9543;
 
@@ -166,7 +175,7 @@ async function updateTotalGoalsBudget() {
   if (!budgetEl) return;
 
   try {
-    const goals = await window.MockAPI.getGoals();
+    const goals = await getApi().getGoals();
     const fx = appState.fxRate || 2.9543;
     let totalInActiveCur = 0;
 
@@ -386,7 +395,7 @@ function setupEventListeners() {
   function setAppMode(mode) {
     const fabBtn = document.getElementById('open-create-goal-modal');
     if (mode === 'cms') {
-      const user = appState.currentUser || window.MockAPI.getCurrentUser();
+      const user = appState.currentUser || getApi().getCurrentUser();
       if (!user || user.role !== 'admin') {
         showToast('⚠️ Доступ ограничен: панель CMS доступна только администраторам (admin@horizon.app)', 'error');
         setAppMode('dashboard');
@@ -511,7 +520,7 @@ function setupEventListeners() {
   const exportJsonBtn = document.getElementById('cms-export-json-btn');
   if (exportJsonBtn) {
     exportJsonBtn.addEventListener('click', () => {
-      const json = window.MockAPI.exportJSON();
+      const json = getApi().exportJSON();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -537,7 +546,7 @@ function setupEventListeners() {
       const reader = new FileReader();
       reader.onload = async (evt) => {
         try {
-          const res = window.MockAPI.importJSON(evt.target.result);
+          const res = getApi().importJSON(evt.target.result);
           showToast(`Импорт успешен: ${res.spheres_count} сфер, ${res.goals_count} целей`, 'success');
           await refreshAll();
           renderCMSSpheres();
@@ -558,7 +567,7 @@ function setupEventListeners() {
 
   if (generateSqlBtn && sqlOutput) {
     generateSqlBtn.addEventListener('click', () => {
-      const sql = window.MockAPI.generateSQLInserts();
+      const sql = getApi().generateSQLInserts();
       sqlOutput.value = sql;
       showToast('SQL INSERT скрипт сгенерирован', 'info');
     });
@@ -567,7 +576,7 @@ function setupEventListeners() {
   if (copySqlBtn && sqlOutput) {
     copySqlBtn.addEventListener('click', () => {
       if (!sqlOutput.value) {
-        sqlOutput.value = window.MockAPI.generateSQLInserts();
+        sqlOutput.value = getApi().generateSQLInserts();
       }
       navigator.clipboard.writeText(sqlOutput.value).then(() => {
         showToast('SQL скопирован в буфер обмена', 'success');
@@ -582,7 +591,7 @@ function setupEventListeners() {
   // Кнопка сброса к демо-данным (доступна глобально для десктопа и мобильного ящика)
   window.resetAppDemo = async function() {
     if (confirm('Сбросить данные к исходным демо-значениям из базы данных?')) {
-      window.MockAPI.resetToDefaults();
+      getApi().resetToDefaults();
       showToast('Данные успешно сброшены к начальным значениям', 'info');
       if (typeof window.closeMobileDrawer === 'function') {
         window.closeMobileDrawer();
@@ -636,7 +645,7 @@ async function refreshAll() {
  * Рендеринг радарной диаграммы и аналитики
  */
 async function renderRadarAndAnalytics() {
-  const radarData = await window.MockAPI.getRadarChartData();
+  const radarData = await getApi().getRadarChartData();
 
   // Обновление индекса гармонии
   const harmonyElem = document.getElementById('harmony-index-value');
@@ -839,7 +848,7 @@ async function renderSpheresFilterBar() {
   const container = document.getElementById('spheres-filter-container');
   if (!container) return;
 
-  const spheres = await window.MockAPI.getSpheres();
+  const spheres = await getApi().getSpheres();
 
   const allActive = !appState.selectedSphereId;
   let html = `
@@ -877,7 +886,7 @@ async function renderGoals() {
   const countBadge = document.getElementById('goals-count-badge');
   if (!container) return;
 
-  let goals = await window.MockAPI.getGoals({
+  let goals = await getApi().getGoals({
     sphereId: appState.selectedSphereId,
     status: appState.selectedStatus
   });
@@ -1099,7 +1108,7 @@ async function renderGoalDetail(goalId) {
   const container = document.getElementById('goal-detail-view');
   if (!container) return;
 
-  const goal = await window.MockAPI.getGoalById(goalId);
+  const goal = await getApi().getGoalById(goalId);
   if (!goal) {
     container.innerHTML = `
       <div class="google-card p-12 text-center max-w-lg mx-auto">
@@ -1117,7 +1126,7 @@ async function renderGoalDetail(goalId) {
     return;
   }
 
-  const user = appState.currentUser || window.MockAPI.getCurrentUser();
+  const user = appState.currentUser || getApi().getCurrentUser();
   const isAdmin = user && user.role === 'admin';
   const isAchieved = goal.status === 'achieved';
   const deadlineText = formatDeadline(goal.deadline);
@@ -1401,7 +1410,7 @@ async function renderGoalDetail(goalId) {
 
 window.handleToggleStepDetail = async function(goalId, stepId) {
   try {
-    const result = await window.MockAPI.toggleStep(goalId, stepId);
+    const result = await getApi().toggleStep(goalId, stepId);
     await renderGoalDetail(goalId);
     if (result.celebration && typeof confetti === 'function') {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -1416,7 +1425,7 @@ window.handleToggleStepDetail = async function(goalId, stepId) {
 
 window.handleDeleteStepDetail = async function(goalId, stepId) {
   try {
-    await window.MockAPI.deleteStep(goalId, stepId);
+    await getApi().deleteStep(goalId, stepId);
     showToast('Шаг удален из чек-листа', 'info');
     await renderGoalDetail(goalId);
     renderRadarAndAnalytics();
@@ -1434,7 +1443,7 @@ window.handleAddNewStepDetail = async function(e, goalId) {
   try {
     const title = titleInput.value.trim();
     const weight = parseInt(weightSelect ? weightSelect.value : 1, 10) || 1;
-    await window.MockAPI.addStep(goalId, title, weight);
+    await getApi().addStep(goalId, title, weight);
     titleInput.value = '';
     showToast('Новый шаг добавлен!', 'success');
     await renderGoalDetail(goalId);
@@ -1447,7 +1456,7 @@ window.handleAddNewStepDetail = async function(e, goalId) {
 window.handleDeleteGoalDetail = async function(goalId) {
   if (!confirm("Вы уверены, что хотите удалить эту цель?")) return;
   try {
-    await window.MockAPI.deleteGoal(goalId);
+    await getApi().deleteGoal(goalId);
     showToast('Цель успешно удалена', 'info');
     window.closeGoalDetail();
   } catch (e) {
@@ -1460,7 +1469,7 @@ window.handleDeleteGoalDetail = async function(goalId) {
  */
 window.handleToggleStep = async (goalId, stepId) => {
   try {
-    const result = await window.MockAPI.toggleStep(goalId, stepId);
+    const result = await getApi().toggleStep(goalId, stepId);
 
     if (result.celebration && typeof confetti === 'function') {
       confetti({
@@ -1470,8 +1479,8 @@ window.handleToggleStep = async (goalId, stepId) => {
       });
       showToast('🎉 Поздравляем! Цель выполнена на 100%!', 'celebration');
     } else {
-      const deltaSign = result.sphere_metrics.score_delta > 0 ? '+' : '';
-      const deltaText = result.sphere_metrics.score_delta !== 0 
+      const deltaSign = (result.sphere_metrics && result.sphere_metrics.score_delta > 0) ? '+' : '';
+      const deltaText = (result.sphere_metrics && result.sphere_metrics.score_delta !== 0)
         ? ` (${result.sphere_metrics.sphere_title}: ${deltaSign}${result.sphere_metrics.score_delta})`
         : '';
       showToast(`Прогресс цели: ${result.goal_progress_percent}%${deltaText}`, 'success');
@@ -1492,7 +1501,7 @@ window.promptAddStep = async (goalId) => {
   const weight = parseInt(weightStr, 10) || 1;
 
   try {
-    await window.MockAPI.addStep(goalId, title, weight);
+    await getApi().addStep(goalId, title, weight);
     showToast('Шаг добавлен в чек-лист', 'success');
     await refreshAll();
   } catch (e) {
@@ -1503,7 +1512,7 @@ window.promptAddStep = async (goalId) => {
 window.handleDeleteStep = async (goalId, stepId) => {
   if (!confirm('Удалить этот шаг чек-листа?')) return;
   try {
-    await window.MockAPI.deleteStep(goalId, stepId);
+    await getApi().deleteStep(goalId, stepId);
     showToast('Шаг удален', 'info');
     await refreshAll();
   } catch (e) {
@@ -1514,7 +1523,7 @@ window.handleDeleteStep = async (goalId, stepId) => {
 window.handleDeleteGoal = async (goalId) => {
   if (!confirm('Вы уверены, что хотите удалить эту карточку цели?')) return;
   try {
-    await window.MockAPI.deleteGoal(goalId);
+    await getApi().deleteGoal(goalId);
     showToast('Карточка цели удалена', 'info');
     await refreshAll();
   } catch (e) {
@@ -1537,7 +1546,7 @@ window.openCreateGoalModal = async () => {
   if (heading) heading.textContent = "Новая цель на Карту желаний";
   if (editId) editId.value = '';
 
-  const spheres = await window.MockAPI.getSpheres();
+  const spheres = await getApi().getSpheres();
   sphereSelect.innerHTML = spheres.map(s => `
     <option value="${s.id}" ${appState.selectedSphereId === s.id ? 'selected' : ''}>
       ${s.title}
@@ -1611,7 +1620,7 @@ async function handleCreateGoalSubmit(e) {
 
   try {
     if (editId) {
-      await window.MockAPI.updateGoal(editId, {
+      await getApi().updateGoal(editId, {
         title,
         sphere_id: sphereId,
         description,
@@ -1624,7 +1633,7 @@ async function handleCreateGoalSubmit(e) {
       });
       showToast('Цель успешно обновлена в CMS', 'success');
     } else {
-      await window.MockAPI.createGoal({
+      await getApi().createGoal({
         title,
         sphere_id: sphereId,
         description,
@@ -1695,7 +1704,7 @@ async function renderCMSSpheres() {
   const tbody = document.getElementById('cms-spheres-table-body');
   if (!tbody) return;
 
-  const spheres = await window.MockAPI.getSpheres();
+  const spheres = await getApi().getSpheres();
 
   tbody.innerHTML = spheres.map(s => `
     <tr>
@@ -1765,7 +1774,7 @@ window.openSphereModal = async (sphereId = null) => {
   if (!modal) return;
 
   if (sphereId) {
-    const spheres = await window.MockAPI.getSpheres();
+    const spheres = await getApi().getSpheres();
     const sphere = spheres.find(s => s.id === sphereId);
     if (!sphere) return;
 
@@ -1811,7 +1820,7 @@ async function handleSphereFormSubmit(e) {
 
   try {
     if (id) {
-      await window.MockAPI.updateSphere(id, {
+      await getApi().updateSphere(id, {
         title,
         description,
         color,
@@ -1821,7 +1830,7 @@ async function handleSphereFormSubmit(e) {
       });
       showToast('Сфера жизни обновлена', 'success');
     } else {
-      await window.MockAPI.createSphere({
+      await getApi().createSphere({
         title,
         description,
         color,
@@ -1848,7 +1857,7 @@ window.deleteSphereFromCMS = async (sphereId) => {
   if (!confirm('Вы уверены, что хотите удалить эту сферу? Все связанные с ней цели также будут удалены!')) return;
 
   try {
-    await window.MockAPI.deleteSphere(sphereId);
+    await getApi().deleteSphere(sphereId);
     showToast('Сфера жизни удалена', 'info');
     await refreshAll();
     renderCMSSpheres();
@@ -1868,7 +1877,7 @@ async function renderCMSGoals() {
   const statusFilter = document.getElementById('cms-goals-status-filter');
   const selectedStatus = statusFilter ? statusFilter.value : 'all';
 
-  let goals = await window.MockAPI.getGoals({ status: selectedStatus });
+  let goals = await getApi().getGoals({ status: selectedStatus });
 
   tbody.innerHTML = goals.map(g => {
     const isAchieved = g.status === 'achieved';
@@ -1960,11 +1969,11 @@ window.openEditGoalModal = async (goalId) => {
 
   if (!modal) return;
 
-  const goals = await window.MockAPI.getGoals();
+  const goals = await getApi().getGoals();
   const goal = goals.find(g => g.id === goalId);
   if (!goal) return;
 
-  const spheres = await window.MockAPI.getSpheres();
+  const spheres = await getApi().getSpheres();
   sphereSelect.innerHTML = spheres.map(s => `
     <option value="${s.id}" ${s.id === goal.sphere_id ? 'selected' : ''}>
       ${s.title}
@@ -2017,7 +2026,7 @@ function escapeHTML(str) {
  * Ролевой контроль доступа (RBAC: UC-4)
  */
 function applyRBAC() {
-  const currentUser = appState.currentUser || window.MockAPI.getCurrentUser();
+  const currentUser = appState.currentUser || getApi().getCurrentUser();
   appState.currentUser = currentUser;
 
   const headerAvatar = document.getElementById('header-user-avatar');
@@ -2098,12 +2107,13 @@ window.openAuthModal = function() {
   const modal = document.getElementById('auth-modal');
   if (!modal) return;
 
-  const currentUser = appState.currentUser || window.MockAPI.getCurrentUser();
+  const currentUser = appState.currentUser || getApi().getCurrentUser();
   const avatarEl = document.getElementById('auth-modal-user-avatar');
   const nameEl = document.getElementById('auth-modal-user-name');
   const emailEl = document.getElementById('auth-modal-user-email');
   const badgeEl = document.getElementById('auth-modal-user-badge');
   const hintEl = document.getElementById('auth-modal-permissions-hint');
+  const apiStatusText = document.getElementById('api-status-text');
 
   if (avatarEl) avatarEl.src = currentUser.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80';
   if (nameEl) nameEl.textContent = currentUser.name;
@@ -2132,6 +2142,15 @@ window.openAuthModal = function() {
     }
   }
 
+  // Обновление статуса подключения бэкенда FastAPI
+  if (apiStatusText) {
+    if (window.API && window.API.isOnline) {
+      apiStatusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span class="text-emerald-700 dark:text-emerald-400 font-bold">Онлайн (FastAPI: 8000)</span>`;
+    } else {
+      apiStatusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-700 dark:text-amber-400 font-bold">Автономно (Локальный кэш)</span>`;
+    }
+  }
+
   modal.classList.remove('hidden');
   document.body.classList.add('overflow-hidden');
   safeLucideIcons();
@@ -2147,11 +2166,12 @@ window.closeAuthModal = function() {
 
 window.switchDemoUser = async function(email) {
   try {
-    const authResult = await window.MockAPI.login(email);
+    const authResult = await getApi().login(email);
     appState.currentUser = authResult.user;
     applyRBAC();
     window.closeAuthModal();
     showToast(`✨ Вы авторизованы как ${authResult.user.name} (${authResult.user.role.toUpperCase()})`, 'success');
+    await refreshAll();
   } catch (e) {
     showToast('Ошибка авторизации: ' + e.message, 'error');
   }
@@ -2159,11 +2179,12 @@ window.switchDemoUser = async function(email) {
 
 window.logoutUserSession = async function() {
   try {
-    const guest = await window.MockAPI.logout();
+    const guest = await getApi().logout();
     appState.currentUser = guest;
     applyRBAC();
     window.closeAuthModal();
     showToast('Вы вышли из системы (режим Гостя)', 'info');
+    await refreshAll();
   } catch (e) {
     showToast('Ошибка выхода: ' + e.message, 'error');
   }
