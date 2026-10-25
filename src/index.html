@@ -74,31 +74,22 @@
         </a>
       </div>
 
-      <!-- ПРАВАЯ ЧАСТЬ: Компактный блок (Валюта, Тема, Профиль/Меню с CMS, Новая цель) -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+      <!-- ПРАВАЯ ЧАСТЬ: Чистый компактный блок (Валюта Br/USD, Тема, Сброс, Профиль/Меню) -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         
-        <!-- Поисковая строка (на больших мониторах >= 1280px) -->
-        <div class="relative hidden xl:block w-36">
-          <i data-lucide="search" class="w-3.5 h-3.5 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" 
-                 id="global-search-input" 
-                 placeholder="Поиск..." 
-                 class="w-full pl-8 pr-3 py-1 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
-        </div>
-
-        <!-- 1. Компактный переключатель валюты: BYN | USD (виден на всех экранах) -->
+        <!-- 1. Компактный переключатель валюты: Br | USD -->
         <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold shrink-0" 
              id="currency-switcher-wrap"
-             title="Переключение валюты: BYN / USD">
+             title="Переключение валюты: Br (BYN) / USD">
           <button id="currency-byn-btn" 
                   onclick="window.setAppCurrency('BYN')" 
-                  class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
-                  title="Отображать суммы в белорусских рублях (BYN)">
-            BYN
+                  class="px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
+                  title="Отображать суммы в белорусских рублях (Br / BYN)">
+            Br
           </button>
           <button id="currency-usd-btn" 
                   onclick="window.setAppCurrency('USD')" 
-                  class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
+                  class="px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
                   title="Отображать суммы в долларах США (USD)">
             USD
           </button>
@@ -107,16 +98,24 @@
         <!-- 2. Переключатель темы (Dark / Light) -->
         <button id="theme-toggle-btn" 
                 onclick="window.toggleAppTheme()"
-                class="google-btn-outlined p-1.5 sm:p-2 text-xs flex items-center justify-center shrink-0 rounded-full"
-                title="Переключить тему">
-          <i id="theme-icon" data-lucide="moon" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                class="google-btn-outlined p-2 text-xs flex items-center justify-center shrink-0 rounded-full"
+                title="Переключить тему (Светлая / Тёмная)">
+          <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
         </button>
 
-        <!-- 3. Меню Профиля и Управления (Контекстное меню с доступом к CMS для Admin) -->
+        <!-- 3. Кнопка сброса к демо-данным -->
+        <button id="reset-demo-btn" 
+                onclick="window.resetAppDemo()" 
+                class="google-btn-outlined p-2 text-xs flex items-center justify-center shrink-0 rounded-full hover:text-[#D93025] hover:border-red-300 transition-all"
+                title="Сбросить к исходным демо-данным">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+
+        <!-- 4. Меню Профиля и Управления (Контекстное меню с доступом к CMS для Admin) -->
         <div class="relative">
           <button id="header-profile-btn" 
                   onclick="window.toggleUserMenu()" 
-                  class="flex items-center gap-1.5 p-1 sm:pl-1.5 sm:pr-2 sm:py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs shrink-0"
+                  class="flex items-center gap-1.5 p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs shrink-0"
                   title="Меню профиля и управление"
                   aria-label="Открыть меню профиля">
             <img id="header-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-6 h-6 sm:w-5 sm:h-5 rounded-full object-cover">
@@ -180,12 +179,6 @@
             </button>
           </div>
         </div>
-
-        <!-- 4. КНОПКА «+ НОВАЯ ЦЕЛЬ» (Видна ВСЕГДА) -->
-        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3.5 py-1.5 rounded-full shrink-0 shadow-sm">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Новая цель</span>
-        </button>
 
       </div>
 
@@ -1038,8 +1031,20 @@
     </div>
   </div>
 
-  <!-- Контейнер Toast уведомлений -->
-  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm pointer-events-none [&>*]:pointer-events-auto"></div>
+  <!-- ============================================================================ -->
+  <!-- УНИВЕРСАЛЬНАЯ ПЛАВАЮЩАЯ КНОПКА ДЕЙСТВИЯ (FAB: + Новая цель)                 -->
+  <!-- ============================================================================ -->
+  <button id="open-create-goal-modal"
+          type="button"
+          onclick="window.openCreateGoalModal()"
+          class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 w-14 h-14 rounded-full bg-[#1A73E8] hover:bg-[#1557B0] active:scale-95 text-white shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-200 ease-out group hover:-translate-y-1 active:translate-y-0 ring-4 ring-[#1A73E8]/20 focus:outline-none focus:ring-4 focus:ring-[#1A73E8]/40"
+          title="Создать новую цель (+)"
+          aria-label="Создать новую цель">
+    <i data-lucide="plus" class="w-6 h-6 stroke-[2.5] transition-transform duration-200 group-hover:rotate-90"></i>
+  </button>
+
+  <!-- Контейнер Toast уведомлений (расположен выше кнопки FAB) -->
+  <div id="toast-container" class="fixed bottom-24 right-6 sm:bottom-28 sm:right-8 z-50 flex flex-col gap-2 max-w-sm pointer-events-none [&>*]:pointer-events-auto"></div>
 
   <!-- Классические скрипты для прямой работы через file:// -->
   <script src="mock-api.js"></script>

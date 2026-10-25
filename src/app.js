@@ -384,6 +384,7 @@ function setupEventListeners() {
   const goalDetailView = document.getElementById('goal-detail-view');
 
   function setAppMode(mode) {
+    const fabBtn = document.getElementById('open-create-goal-modal');
     if (mode === 'cms') {
       const user = appState.currentUser || window.MockAPI.getCurrentUser();
       if (!user || user.role !== 'admin') {
@@ -396,6 +397,7 @@ function setupEventListeners() {
       dashboardView.classList.add('hidden');
       if (goalDetailView) goalDetailView.classList.add('hidden');
       cmsView.classList.remove('hidden');
+      if (fabBtn) fabBtn.classList.add('hidden');
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
       renderCMSSpheres();
@@ -405,6 +407,7 @@ function setupEventListeners() {
       dashboardView.classList.add('hidden');
       cmsView.classList.add('hidden');
       if (goalDetailView) goalDetailView.classList.remove('hidden');
+      if (fabBtn) fabBtn.classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       appState.currentMode = 'dashboard';
@@ -412,6 +415,7 @@ function setupEventListeners() {
       cmsView.classList.add('hidden');
       if (goalDetailView) goalDetailView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
+      if (fabBtn) fabBtn.classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       refreshAll();
     }
