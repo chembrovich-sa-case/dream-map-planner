@@ -268,6 +268,33 @@ window.toggleMobileDrawer = function() {
 };
 
 /**
+ * Управление меню профиля и действий (Контекстное меню & Выдвижной ящик)
+ */
+window.toggleUserMenu = function() {
+  if (window.innerWidth < 768) {
+    window.toggleMobileDrawer();
+  } else {
+    const menu = document.getElementById('desktop-user-menu');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+    safeLucideIcons();
+  }
+};
+
+window.closeAllMenus = function() {
+  const menu = document.getElementById('desktop-user-menu');
+  if (menu) menu.classList.add('hidden');
+  if (typeof window.closeMobileDrawer === 'function') {
+    window.closeMobileDrawer();
+  }
+};
+
+window.openCMSFromMenu = function() {
+  window.closeAllMenus();
+  window.setAppMode('cms');
+};
+
+/**
  * Настройка глобальных обработчиков событий
  */
 function setupEventListeners() {
@@ -279,6 +306,24 @@ function setupEventListeners() {
       renderGoals();
     });
   }
+
+  // Закрытие выпадающего меню пользователя при клике вне его области
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('desktop-user-menu');
+    const profileBtn = document.getElementById('header-profile-btn');
+    if (menu && !menu.classList.contains('hidden')) {
+      if (!menu.contains(e.target) && (!profileBtn || !profileBtn.contains(e.target))) {
+        menu.classList.add('hidden');
+      }
+    }
+  });
+
+  // Закрытие меню по нажатию Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      window.closeAllMenus();
+    }
+  });
 
   // Модальное окно "+ Новая цель"
   const openModalBtn = document.getElementById('open-create-goal-modal');
@@ -333,18 +378,12 @@ function setupEventListeners() {
     });
   });
 
-  // Переключение режима «Дашборд / CMS Управление / Детальный просмотр цели»
-  const modeDashboardBtn = document.getElementById('nav-mode-dashboard-btn');
-  const modeCmsBtn = document.getElementById('nav-mode-cms-btn');
-  const mobileModeToggleBtn = document.getElementById('mobile-mode-toggle-btn');
+  // Переключение режима «Дашборд (по умолчанию) / CMS Управление / Детальный просмотр цели»
   const dashboardView = document.getElementById('dashboard-view');
   const cmsView = document.getElementById('cms-view');
   const goalDetailView = document.getElementById('goal-detail-view');
 
   function setAppMode(mode) {
-    const mobModeDashBtn = document.getElementById('mobile-nav-dashboard-btn');
-    const mobModeCmsBtn = document.getElementById('mobile-nav-cms-btn');
-
     if (mode === 'cms') {
       const user = appState.currentUser || window.MockAPI.getCurrentUser();
       if (!user || user.role !== 'admin') {
@@ -358,20 +397,7 @@ function setupEventListeners() {
       if (goalDetailView) goalDetailView.classList.add('hidden');
       cmsView.classList.remove('hidden');
 
-      if (modeCmsBtn) {
-        modeCmsBtn.classList.add('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeCmsBtn.classList.remove('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (modeDashboardBtn) {
-        modeDashboardBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeDashboardBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (mobModeCmsBtn) {
-        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-semibold text-xs flex items-center gap-2.5 transition-all bg-[#1A73E8] text-white shadow-sm";
-      }
-      if (mobModeDashBtn) {
-        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       renderCMSSpheres();
       renderCMSGoals();
     } else if (mode === 'goal-detail') {
@@ -379,57 +405,20 @@ function setupEventListeners() {
       dashboardView.classList.add('hidden');
       cmsView.classList.add('hidden');
       if (goalDetailView) goalDetailView.classList.remove('hidden');
-
-      if (modeDashboardBtn) {
-        modeDashboardBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeDashboardBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (modeCmsBtn) {
-        modeCmsBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeCmsBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (mobModeDashBtn) {
-        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
-      }
-      if (mobModeCmsBtn) {
-        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       appState.currentMode = 'dashboard';
       appState.activeGoalId = null;
       cmsView.classList.add('hidden');
       if (goalDetailView) goalDetailView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
-
-      if (modeDashboardBtn) {
-        modeDashboardBtn.classList.add('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeDashboardBtn.classList.remove('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (modeCmsBtn) {
-        modeCmsBtn.classList.remove('bg-[#1A73E8]', 'text-white', 'shadow-sm', 'font-semibold');
-        modeCmsBtn.classList.add('text-[#5F6368]', 'dark:text-[#94A3B8]', 'font-medium');
-      }
-      if (mobModeDashBtn) {
-        mobModeDashBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-semibold text-xs flex items-center gap-2.5 transition-all bg-[#1A73E8] text-white shadow-sm";
-      }
-      if (mobModeCmsBtn) {
-        mobModeCmsBtn.className = "w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all";
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       refreshAll();
     }
     safeLucideIcons();
   }
 
   window.setAppMode = setAppMode;
-
-  if (modeDashboardBtn) modeDashboardBtn.addEventListener('click', () => setAppMode('dashboard'));
-  if (modeCmsBtn) modeCmsBtn.addEventListener('click', () => setAppMode('cms'));
-  if (mobileModeToggleBtn) {
-    mobileModeToggleBtn.addEventListener('click', () => {
-      const isCms = !cmsView.classList.contains('hidden');
-      setAppMode(isCms ? 'dashboard' : 'cms');
-    });
-  }
 
   // Вкладки внутри CMS (Сферы / Цели / База данных)
   const cmsTabSpheresBtn = document.getElementById('cms-tab-spheres-btn');
@@ -2030,31 +2019,30 @@ function applyRBAC() {
   const headerAvatar = document.getElementById('header-user-avatar');
   const headerName = document.getElementById('header-user-name');
   const headerBadge = document.getElementById('header-user-role-badge');
+
+  const menuAvatar = document.getElementById('menu-user-avatar');
+  const menuName = document.getElementById('menu-user-name');
+  const menuEmail = document.getElementById('menu-user-email');
+  const menuBadge = document.getElementById('menu-user-role-badge');
+  const menuCmsContainer = document.getElementById('menu-cms-item-container');
+
   const mobAvatar = document.getElementById('mobile-user-avatar');
   const mobName = document.getElementById('mobile-user-name');
   const mobEmail = document.getElementById('mobile-user-email');
   const mobBadge = document.getElementById('mobile-user-role-badge');
-  const modeCmsBtn = document.getElementById('nav-mode-cms-btn');
-  const mobModeCmsBtn = document.getElementById('mobile-nav-cms-btn');
-  const mobileModeToggleBtn = document.getElementById('mobile-mode-toggle-btn');
-  const navContainer = document.getElementById('header-nav-mode-container');
+  const mobileCmsContainer = document.getElementById('mobile-cms-item-container');
 
-  // Обновление профиля в хедере и мобильном ящике
-  if (headerAvatar && currentUser.avatar_url) {
-    headerAvatar.src = currentUser.avatar_url;
-  }
-  if (mobAvatar && currentUser.avatar_url) {
-    mobAvatar.src = currentUser.avatar_url;
-  }
-  if (headerName) {
-    headerName.textContent = currentUser.name ? currentUser.name.split(' ')[0] : 'Профиль';
-  }
-  if (mobName) {
-    mobName.textContent = currentUser.name || 'Пользователь';
-  }
-  if (mobEmail) {
-    mobEmail.textContent = currentUser.email || '';
-  }
+  // Обновление профиля в хедере, меню и мобильном ящике
+  if (headerAvatar && currentUser.avatar_url) headerAvatar.src = currentUser.avatar_url;
+  if (menuAvatar && currentUser.avatar_url) menuAvatar.src = currentUser.avatar_url;
+  if (mobAvatar && currentUser.avatar_url) mobAvatar.src = currentUser.avatar_url;
+
+  if (headerName) headerName.textContent = currentUser.name ? currentUser.name.split(' ')[0] : 'Профиль';
+  if (menuName) menuName.textContent = currentUser.name || 'Пользователь';
+  if (mobName) mobName.textContent = currentUser.name || 'Пользователь';
+
+  if (menuEmail) menuEmail.textContent = currentUser.email || '';
+  if (mobEmail) mobEmail.textContent = currentUser.email || '';
 
   const roleText = currentUser.role === 'admin' ? 'Admin' : (currentUser.role === 'user' ? 'User' : 'Guest');
   const roleBadgeClass = currentUser.role === 'admin' 
@@ -2067,21 +2055,22 @@ function applyRBAC() {
     headerBadge.textContent = roleText;
     headerBadge.className = roleBadgeClass;
   }
+  if (menuBadge) {
+    menuBadge.textContent = roleText;
+    menuBadge.className = roleBadgeClass;
+  }
   if (mobBadge) {
     mobBadge.textContent = roleText;
     mobBadge.className = roleBadgeClass;
   }
 
-  // Ролевое скрытие/отображение кнопки CMS
+  // Ролевое скрытие/отображение пункта CMS в контекстном меню (RBAC: строго для роли admin)
   if (currentUser.role === 'admin') {
-    if (modeCmsBtn) modeCmsBtn.classList.remove('hidden');
-    if (mobModeCmsBtn) mobModeCmsBtn.classList.remove('hidden');
-    if (mobileModeToggleBtn) mobileModeToggleBtn.classList.remove('hidden');
-    if (navContainer) navContainer.classList.remove('hidden');
+    if (menuCmsContainer) menuCmsContainer.classList.remove('hidden');
+    if (mobileCmsContainer) mobileCmsContainer.classList.remove('hidden');
   } else {
-    if (modeCmsBtn) modeCmsBtn.classList.add('hidden');
-    if (mobModeCmsBtn) mobModeCmsBtn.classList.add('hidden');
-    if (mobileModeToggleBtn) mobileModeToggleBtn.classList.add('hidden');
+    if (menuCmsContainer) menuCmsContainer.classList.add('hidden');
+    if (mobileCmsContainer) mobileCmsContainer.classList.add('hidden');
     // Если пользователь был в режиме CMS, принудительно возвращаем на дашборд
     if (appState.currentMode === 'cms' || (document.getElementById('cms-view') && !document.getElementById('cms-view').classList.contains('hidden'))) {
       if (typeof window.setAppMode === 'function') {

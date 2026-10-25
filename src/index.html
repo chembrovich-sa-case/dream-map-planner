@@ -61,113 +61,131 @@
   <!-- ВЕРХНИЙ ХЕДЕР В СТИЛЕ GOOGLE FOR DEVELOPERS (Адаптивный Mobile First)        -->
   <!-- ============================================================================ -->
   <header class="sticky top-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-[#E8EAED] dark:border-[#1F2937] transition-all">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1.5 sm:gap-3">
       
-      <!-- ЛЕВАЯ ЧАСТЬ: Логотип «ГОРИЗОНТ» и переключатель режимов «Дашборд / CMS» (на десктопе) -->
-      <div class="flex items-center gap-3 shrink-0">
-        <!-- Логотип -->
-        <a href="#" onclick="window.location.reload(); return false;" class="flex items-center gap-2 hover:opacity-95 transition-opacity" title="Горизонт — Карта желаний и баланс">
-          <img src="assets/favicon.svg" alt="Горизонт" class="w-8 h-8 rounded-xl shadow-sm shrink-0">
+      <!-- ЛЕВАЯ ЧАСТЬ: Логотип «ГОРИЗОНТ» -->
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="#" onclick="window.setAppMode('dashboard'); return false;" class="flex items-center gap-2 hover:opacity-95 transition-opacity" title="Горизонт — Карта желаний и баланс">
+          <img src="assets/favicon.svg" alt="Горизонт" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-sm shrink-0">
           <div class="flex flex-col">
             <span class="font-heading font-extrabold text-sm sm:text-base tracking-tight text-[#202124] dark:text-white leading-none">ГОРИЗОНТ</span>
-            <span class="text-[9px] uppercase tracking-wider font-bold text-[#0D9488] dark:text-[#2DD4BF] leading-tight">Баланс &amp; Цели</span>
+            <span class="text-[9px] uppercase tracking-wider font-bold text-[#0D9488] dark:text-[#2DD4BF] leading-tight hidden xs:inline">Баланс &amp; Цели</span>
           </div>
         </a>
-
-        <!-- Переключатель режима «Дашборд / CMS Управление» (только на десктопах >= 768px / md:) -->
-        <div id="header-nav-mode-container" class="hidden md:flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] ml-2">
-          <button id="nav-mode-dashboard-btn" 
-                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-semibold bg-[#1A73E8] text-white transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Визуальный дашборд и цели">
-            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-            <span>Дашборд</span>
-          </button>
-          <button id="nav-mode-cms-btn" 
-                  class="nav-mode-btn px-3 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5"
-                  title="Панель CMS (Управление базой данных)">
-            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-            <span>CMS Управление</span>
-          </button>
-        </div>
       </div>
 
-      <!-- ПРАВАЯ ЧАСТЬ: Десктоп-панель + Кнопка «+ Новая цель» + Бургер-меню (для смартфонов) -->
-      <div class="flex items-center gap-2 sm:gap-2.5">
+      <!-- ПРАВАЯ ЧАСТЬ: Компактный блок (Валюта, Тема, Профиль/Меню с CMS, Новая цель) -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         
-        <!-- ДЕСКТОП-БЛОК ЭЛЕМЕНТОВ (Скрыт на смартфонах < 768px, виден на md:) -->
-        <div class="hidden md:flex items-center gap-2 sm:gap-2.5">
-          <!-- Поисковая строка -->
-          <div class="relative hidden lg:block w-36 xl:w-44">
-            <i data-lucide="search" class="w-3.5 h-3.5 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
-            <input type="text" 
-                   id="global-search-input" 
-                   placeholder="Поиск целей..." 
-                   class="w-full pl-8 pr-3 py-1 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
-          </div>
+        <!-- Поисковая строка (на больших мониторах >= 1280px) -->
+        <div class="relative hidden xl:block w-36">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-[#5F6368] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" 
+                 id="global-search-input" 
+                 placeholder="Поиск..." 
+                 class="w-full pl-8 pr-3 py-1 text-xs rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] text-[#202124] dark:text-white placeholder-[#5F6368] dark:placeholder-[#94A3B8] border border-transparent focus:border-[#1A73E8] focus:bg-white dark:focus:bg-[#111827] focus:outline-none transition-all">
+        </div>
 
-          <!-- Компактный переключатель валюты: BYN | USD -->
-          <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold shrink-0" 
-               id="currency-switcher-wrap"
-               title="Переключение валюты: BYN / USD">
-            <button id="currency-byn-btn" 
-                    onclick="window.setAppCurrency('BYN')" 
-                    class="px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
-                    title="Отображать суммы в белорусских рублях (BYN)">
-              BYN
-            </button>
-            <button id="currency-usd-btn" 
-                    onclick="window.setAppCurrency('USD')" 
-                    class="px-2.5 py-1 rounded-full text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
-                    title="Отображать суммы в долларах США (USD)">
-              USD
-            </button>
-          </div>
-
-          <!-- Кнопка профиля и авторизации (RBAC: UC-4) -->
-          <button id="auth-profile-btn" 
-                  onclick="window.openAuthModal()" 
-                  class="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs shrink-0"
-                  title="Авторизация и профиль (RBAC)">
-            <img id="header-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-5 h-5 rounded-full object-cover">
-            <span id="header-user-name" class="font-bold text-[#202124] dark:text-white max-w-[85px] truncate">Алексей</span>
-            <span id="header-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
+        <!-- 1. Компактный переключатель валюты: BYN | USD (виден на всех экранах) -->
+        <div class="flex items-center p-0.5 rounded-full bg-[#F1F3F4] dark:bg-[#1F2937] border border-[#DADCE0] dark:border-[#374151] text-xs font-semibold shrink-0" 
+             id="currency-switcher-wrap"
+             title="Переключение валюты: BYN / USD">
+          <button id="currency-byn-btn" 
+                  onclick="window.setAppCurrency('BYN')" 
+                  class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all bg-[#1A73E8] text-white shadow-sm"
+                  title="Отображать суммы в белорусских рублях (BYN)">
+            BYN
           </button>
-
-          <!-- Кнопка сброса к демо-данным -->
-          <button id="reset-demo-btn" 
-                  onclick="window.resetAppDemo()"
-                  class="google-btn-outlined p-2 text-xs flex items-center justify-center shrink-0"
-                  title="Сбросить к исходным демо-данным">
-            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-          </button>
-
-          <!-- Переключатель темы (Dark / Light) -->
-          <button id="theme-toggle-btn" 
-                  onclick="window.toggleAppTheme()"
-                  class="google-btn-outlined p-2 text-xs flex items-center justify-center shrink-0"
-                  title="Переключить тему">
-            <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+          <button id="currency-usd-btn" 
+                  onclick="window.setAppCurrency('USD')" 
+                  class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-medium text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white transition-all"
+                  title="Отображать суммы в долларах США (USD)">
+            USD
           </button>
         </div>
 
-        <!-- КНОПКА «+ НОВАЯ ЦЕЛЬ» (Видна ВСЕГДА и на десктопе, и на мобилке) -->
-        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1.5 text-xs font-semibold px-3 sm:px-3.5 py-1.5 rounded-full shrink-0 shadow-sm">
+        <!-- 2. Переключатель темы (Dark / Light) -->
+        <button id="theme-toggle-btn" 
+                onclick="window.toggleAppTheme()"
+                class="google-btn-outlined p-1.5 sm:p-2 text-xs flex items-center justify-center shrink-0 rounded-full"
+                title="Переключить тему">
+          <i id="theme-icon" data-lucide="moon" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+        </button>
+
+        <!-- 3. Меню Профиля и Управления (Контекстное меню с доступом к CMS для Admin) -->
+        <div class="relative">
+          <button id="header-profile-btn" 
+                  onclick="window.toggleUserMenu()" 
+                  class="flex items-center gap-1.5 p-1 sm:pl-1.5 sm:pr-2 sm:py-1 rounded-full border border-[#DADCE0] dark:border-[#374151] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all text-xs shrink-0"
+                  title="Меню профиля и управление"
+                  aria-label="Открыть меню профиля">
+            <img id="header-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-6 h-6 sm:w-5 sm:h-5 rounded-full object-cover">
+            <span id="header-user-name" class="font-bold text-[#202124] dark:text-white max-w-[75px] truncate hidden md:inline">Алексей</span>
+            <span id="header-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hidden md:inline-block">Admin</span>
+            <i data-lucide="more-vertical" class="w-3.5 h-3.5 text-[#5F6368] dark:text-[#94A3B8]"></i>
+          </button>
+
+          <!-- Выпадающее меню профиля (Desktop Dropdown) -->
+          <div id="desktop-user-menu" 
+               class="hidden absolute right-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#111827] border border-[#DADCE0] dark:border-[#1F2937] shadow-xl z-50 p-3 space-y-2 transition-all">
+            <!-- Шапка пользователя -->
+            <div class="flex items-center gap-3 pb-2.5 border-b border-[#E8EAED] dark:border-[#1F2937]">
+              <img id="menu-user-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-[#DADCE0] dark:border-[#374151]">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span id="menu-user-name" class="font-bold text-xs text-[#202124] dark:text-white truncate">Алексей Администраторов</span>
+                  <span id="menu-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Admin</span>
+                </div>
+                <div id="menu-user-email" class="text-[11px] text-[#5F6368] dark:text-[#94A3B8] font-mono truncate">admin@horizon.app</div>
+              </div>
+            </div>
+
+            <!-- Пункт меню: Панель управления (CMS) — СТРОГО ДЛЯ РОЛИ ADMIN ПО RBAC -->
+            <div id="menu-cms-item-container">
+              <button id="menu-cms-btn" 
+                      onclick="window.openCMSFromMenu()" 
+                      class="w-full text-left p-2 rounded-xl text-xs font-semibold text-[#1A73E8] hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2.5 transition-colors">
+                <div class="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-[#1A73E8] shrink-0">
+                  <i data-lucide="sliders" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-bold">Панель управления (CMS)</div>
+                  <div class="text-[10px] text-[#5F6368] dark:text-[#94A3B8] font-normal">Справочник сфер, реестр целей, бэкап БД</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Пункт меню: Сменить профиль / Войти (RBAC) -->
+            <button onclick="window.closeAllMenus(); window.openAuthModal();" 
+                    class="w-full text-left p-2 rounded-xl text-xs font-medium text-[#202124] dark:text-white hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] flex items-center gap-2.5 transition-colors">
+              <div class="p-1.5 rounded-lg bg-[#F1F3F4] dark:bg-[#1F2937] text-[#5F6368] dark:text-[#94A3B8] shrink-0">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="font-semibold">Сменить профиль / Войти</div>
+                <div class="text-[10px] text-[#5F6368] dark:text-[#94A3B8]">Переключение демо-аккаунтов RBAC</div>
+              </div>
+            </button>
+
+            <!-- Пункт меню: Сброс к демо-данным -->
+            <button onclick="window.closeAllMenus(); window.resetAppDemo();" 
+                    class="w-full text-left p-2 rounded-xl text-xs font-medium text-[#D93025] hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2.5 transition-colors">
+              <div class="p-1.5 rounded-lg bg-red-100/60 dark:bg-red-950 text-[#D93025] shrink-0">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="font-semibold">Сбросить данные к демо</div>
+                <div class="text-[10px] text-[#5F6368] dark:text-[#94A3B8]">Восстановить базовый набор</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. КНОПКА «+ НОВАЯ ЦЕЛЬ» (Видна ВСЕГДА) -->
+        <button id="open-create-goal-modal" class="google-btn-primary flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3.5 py-1.5 rounded-full shrink-0 shadow-sm">
           <i data-lucide="plus" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Новая цель</span>
         </button>
-
-        <!-- КНОПКА-БУРГЕР (Только на смартфонах < 768px: md:hidden) -->
-        <button id="mobile-menu-toggle-btn" 
-                type="button" 
-                onclick="window.toggleMobileDrawer()" 
-                class="md:hidden google-btn-outlined p-2 text-xs flex items-center justify-center rounded-full shrink-0 hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all"
-                title="Меню приложения"
-                aria-label="Открыть мобильное меню">
-          <i id="mobile-menu-icon" data-lucide="menu" class="w-5 h-5 text-[#202124] dark:text-white"></i>
-        </button>
-
-        <!-- Скрытая кнопка для совместимости JS -->
-        <button id="mobile-mode-toggle-btn" class="hidden" title="Переключить Дашборд / CMS"></button>
 
       </div>
 
@@ -225,25 +243,19 @@
           </button>
         </div>
 
-        <!-- 2. Режим приложения: Дашборд / CMS Управление (для Admin) -->
-        <div class="space-y-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[#5F6368] dark:text-[#94A3B8]">Разделы приложения</label>
-          <div class="grid grid-cols-1 gap-2">
-            <button id="mobile-nav-dashboard-btn" 
-                    type="button" 
-                    onclick="window.setAppMode('dashboard'); window.closeMobileDrawer();" 
-                    class="w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-semibold text-xs flex items-center gap-2.5 transition-all bg-[#1A73E8] text-white shadow-sm">
-              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-              <span>Визуальный Дашборд</span>
-            </button>
-            <button id="mobile-nav-cms-btn" 
-                    type="button" 
-                    onclick="window.setAppMode('cms'); window.closeMobileDrawer();" 
-                    class="w-full p-2.5 rounded-xl border border-[#DADCE0] dark:border-[#374151] font-medium text-xs text-[#5F6368] dark:text-[#94A3B8] hover:text-[#202124] dark:hover:text-white flex items-center gap-2.5 transition-all">
-              <i data-lucide="settings" class="w-4 h-4"></i>
-              <span>CMS Управление (БД)</span>
-            </button>
-          </div>
+        <!-- 2. Пункт CMS (Строго по ролевой модели RBAC для роли Admin) -->
+        <div id="mobile-cms-item-container" class="space-y-1">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[#1A73E8] dark:text-[#60A5FA]">Панель управления</label>
+          <button id="mobile-nav-cms-btn" 
+                  type="button" 
+                  onclick="window.openCMSFromMenu();" 
+                  class="w-full p-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 font-semibold text-xs text-[#1A73E8] dark:text-[#60A5FA] hover:bg-blue-100 dark:hover:bg-blue-900/50 flex items-center gap-2.5 transition-all shadow-sm">
+            <i data-lucide="sliders" class="w-4 h-4 text-[#1A73E8] dark:text-[#60A5FA]"></i>
+            <div class="text-left">
+              <div class="font-bold">Панель управления (CMS)</div>
+              <div class="text-[10px] text-[#5F6368] dark:text-[#94A3B8] font-normal">Справочник сфер, цели и бэкап БД</div>
+            </div>
+          </button>
         </div>
 
         <!-- 3. Валюта отображения: BYN | USD -->
@@ -445,6 +457,34 @@
   <!-- 2. РЕЖИМ CMS АДМИН-ПАНЕЛИ (Скрыт по умолчанию) -->
   <!-- ============================================================================ -->
   <main id="cms-view" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 hidden">
+    
+    <!-- Панель возврата к дашборду (Выход из CMS) -->
+    <div class="flex items-center justify-between pb-3.5 border-b border-[#E8EAED] dark:border-[#1F2937]">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button type="button" 
+                onclick="window.setAppMode('dashboard')" 
+                class="google-btn-outlined px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 rounded-full hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] transition-all"
+                title="Вернуться к дашборду и колесу баланса">
+          <i data-lucide="arrow-left" class="w-4 h-4 text-[#1A73E8]"></i>
+          <span>← Вернуться на дашборд</span>
+        </button>
+        <div class="hidden sm:flex items-center gap-1.5 text-xs text-[#5F6368] dark:text-[#94A3B8]">
+          <span class="hover:underline cursor-pointer" onclick="window.setAppMode('dashboard')">Главная</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          <span class="font-bold text-[#202124] dark:text-white">CMS Управление</span>
+        </div>
+      </div>
+
+      <!-- Кнопка-крестик быстрого закрытия CMS -->
+      <button type="button" 
+              onclick="window.setAppMode('dashboard')" 
+              class="p-1.5 sm:px-2.5 sm:py-1 rounded-full text-[#5F6368] dark:text-[#94A3B8] hover:bg-[#F1F3F4] dark:hover:bg-[#1F2937] hover:text-[#202124] dark:hover:text-white transition-all flex items-center gap-1.5 text-xs"
+              title="Закрыть CMS и вернуться на дашборд"
+              aria-label="Закрыть панель управления">
+        <span class="hidden sm:inline font-medium">Закрыть</span>
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
     
     <!-- Шапка CMS с переключателем 3 вкладок -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
