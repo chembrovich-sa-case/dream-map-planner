@@ -1180,6 +1180,314 @@ window.takeBalanceSnapshot = async function() {
 };
 
 /**
+ * Экспорт официального корпоративного PDF-отчета (FastAPI + ReportLab с фолбэком на печатную версию)
+ */
+window.exportBalanceReportPDF = async function() {
+  const btn = document.getElementById('export-pdf-btn');
+  const originalHtml = btn ? btn.innerHTML : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Генерация PDF...</span>`;
+    safeLucideIcons();
+  }
+
+  showToast("📄 Формирование корпоративного PDF-отчета...", "info");
+
+  try {
+    const result = await getApi().exportPDFReport();
+    if (result && result.blob) {
+      const blobUrl = window.URL.createObjectURL(result.blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = result.filename || `Horizon_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast("✅ Официальный PDF-отчет успешно сформирован и скачан!", "success");
+      return;
+    }
+  } catch (err) {
+    console.warn("Экспорт PDF через бэкенд FastAPI:", err.message);
+
+    if (err.message === "UNAUTHORIZED") {
+      showToast("🔒 Сессия авторизации истекла. Пожалуйста, выполните повторный вход.", "error");
+      if (typeof window.openAuthModal === 'function') window.openAuthModal();
+      return;
+    }
+
+    if (err.message === "BACKEND_OFFLINE" || err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+      // Сервер FastAPI не запущен локально (например, на GitHub Pages).
+      // Формируем безупречный корпоративный отчет для печати / сохранения в PDF прямо в браузере!
+      showToast("ℹ️ Бэкенд FastAPI офлайн. Открываем корпоративный отчет для печати / PDF...", "info");
+      await openClientPrintReport();
+      return;
+    }
+
+    showToast("⚠️ Ошибка формирования PDF: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+      safeLucideIcons();
+    }
+  }
+};
+
+/**
+ * Клиентский генератор печатного корпоративного отчета (фолбэк для GitHub Pages)
+ */
+async function openClientPrintReport() {
+  const spheres = await getApi().getSpheres();
+  const goals = await getApi().getGoals();
+  const user = appState.currentUser || getApi().getCurrentUser() || { name: "Алексей Администраторов", email: "admin@horizon.app", role: "admin" };
+  const fxRate = appState.fxRate || 2.9543;
+
+  // Расчет гармонии
+  const scores = spheres.map(s => Number(s.current_score) || 0);
+  let harmonyPercent = 80;
+  if (scores.length > 0) {
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length;
+    const stdDev = Math.sqrt(variance);
+    harmonyPercent = Math.max(10, Math.min(100, Math.round((1.0 - (stdDev / 5.0)) * 100)));
+  }
+
+  // Расчет бюджетов
+  let totalByn = 0;
+  let totalUsd = 0;
+  goals.forEach(g => {
+    const amt = Number(g.cost_amount) || 0;
+    const cur = (g.currency || 'BYN').toUpperCase();
+    if (cur === 'BYN') {
+      totalByn += amt;
+      totalUsd += amt / fxRate;
+    } else {
+      totalUsd += amt;
+      totalByn += amt * fxRate;
+    }
+  });
+
+  const avgScore = spheres.length > 0 
+    ? (scores.reduce((a, b) => a + b, 0) / spheres.length).toFixed(1) 
+    : "0.0";
+
+  const totalGoals = goals.length;
+  const inProgressGoals = goals.filter(g => g.status === 'in_progress').length;
+  const achievedGoals = goals.filter(g => g.status === 'achieved').length;
+
+  const spheresMap = {};
+  spheres.forEach(s => { spheresMap[s.id] = s.title; });
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showToast("⚠️ Всплывающее окно заблокировано браузером. Разрешите всплывающие окна для экспорта отчета.", "error");
+    return;
+  }
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ГОРИЗОНТ — Аналитический отчет баланса и целей (${user.name})</title>
+  <style>
+    @page { size: A4; margin: 12mm 15mm 15mm 15mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 20px; font-size: 11px; line-height: 1.4; background: #fff; }
+    .no-print { margin-bottom: 20px; padding: 12px 18px; background: #e8f0fe; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #c2e7ff; }
+    .btn { background: #1a73e8; color: white; border: none; padding: 8px 18px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 12px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1a73e8; padding-bottom: 12px; margin-bottom: 14px; }
+    .logo { font-size: 20px; font-weight: 900; color: #1a73e8; letter-spacing: -0.5px; }
+    .subtitle { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .meta { font-size: 9px; text-align: right; color: #475569; }
+    .meta b { color: #0f172a; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+    .kpi-title { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    .kpi-val { font-size: 18px; font-weight: 800; color: #1a73e8; margin: 3px 0; }
+    .kpi-sub { font-size: 8px; color: #64748b; }
+    h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #0f172a; margin: 14px 0 8px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 14px; }
+    th { background: #1a73e8; color: white; font-weight: 600; text-align: left; padding: 6px 8px; font-size: 9px; }
+    th.goals-th { background: #1e293b; }
+    td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    tr.total-row td { background: #edf2f7; font-weight: 700; border-top: 1.5px solid #cbd5e1; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 600; }
+    .tag-green { background: #dcfce7; color: #15803d; }
+    .tag-blue { background: #dbeafe; color: #1d4ed8; }
+    .footer { font-size: 8px; color: #94a3b8; text-align: center; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+    @media print {
+      .no-print { display: none; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <div>
+      <strong>📄 Предварительный просмотр корпоративного отчета «ГОРИЗОНТ»</strong>
+      <div style="font-size: 11px; color: #5f6368;">В диалоговом окне печати выберите <b>«Сохранить как PDF»</b></div>
+    </div>
+    <button class="btn" onclick="window.print()">Распечатать / Сохранить в PDF</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <div class="logo">ГОРИЗОНТ</div>
+      <div class="subtitle">Карта желаний, колесо баланса &amp; декомпозиция целей</div>
+      <div class="subtitle" style="color: #1a73e8; font-weight: 600;">Официальный аналитический отчет резидента</div>
+    </div>
+    <div class="meta">
+      <div><b>Резидент:</b> ${user.name} (${user.email || 'user@horizon.app'})</div>
+      <div><b>Роль:</b> ${user.role === 'admin' ? 'Администратор (Admin)' : 'Пользователь (User)'}</div>
+      <div><b>Дата отчета:</b> ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div><b>Официальный курс:</b> 1 USD = ${fxRate.toFixed(4)} BYN (НБРБ)</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-title">Индекс гармонии</div>
+      <div class="kpi-val" style="color: ${harmonyPercent >= 80 ? '#10b981' : (harmonyPercent >= 60 ? '#1a73e8' : '#f59e0b')}">${harmonyPercent}%</div>
+      <div class="kpi-sub">${harmonyPercent >= 80 ? 'Высокая гармония' : (harmonyPercent >= 60 ? 'Умеренный баланс' : 'Требует внимания')}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Сфер жизни</div>
+      <div class="kpi-val">${spheres.length} сфер</div>
+      <div class="kpi-sub">Средний балл: ${avgScore} из 10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Реестр целей</div>
+      <div class="kpi-val">${totalGoals} целей</div>
+      <div class="kpi-sub">В работе: ${inProgressGoals} • Готово: ${achievedGoals}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Итоговый бюджет</div>
+      <div class="kpi-val" style="color: #0d9488;">${Math.round(totalByn).toLocaleString('ru-RU')} Br</div>
+      <div class="kpi-sub">Эквивалент: $${Math.round(totalUsd).toLocaleString('ru-RU')} USD</div>
+    </div>
+  </div>
+
+  <h2>1. Справочник сфер жизни и оценка баланса</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25px;" class="text-center">#</th>
+        <th>Сфера жизни</th>
+        <th style="width: 75px;" class="text-center">Текущий балл</th>
+        <th style="width: 75px;" class="text-center">Целевой балл</th>
+        <th style="width: 70px;" class="text-center">Прогресс</th>
+        <th style="width: 60px;" class="text-center">Целей</th>
+        <th style="width: 100px;" class="text-center">Статус сферы</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${spheres.map((s, idx) => {
+        const c = Number(s.current_score) || 0;
+        const t = Number(s.target_score) || 10;
+        const pct = Math.min(100, Math.round((c / t) * 100));
+        const cnt = goals.filter(g => g.sphere_id === s.id).length;
+        const tag = pct >= 80 ? '<span class="tag tag-green">Гармонично</span>' : (pct >= 50 ? '<span class="tag tag-blue">В динамике</span>' : '<span class="tag" style="background:#fef3c7;color:#b45309;">Фокус</span>');
+        return `
+          <tr>
+            <td class="text-center">${idx + 1}</td>
+            <td><strong>${s.title}</strong></td>
+            <td class="text-center">${c.toFixed(1)}</td>
+            <td class="text-center">${t.toFixed(1)}</td>
+            <td class="text-center">${pct}%</td>
+            <td class="text-center">${cnt}</td>
+            <td class="text-center">${tag}</td>
+          </tr>
+        `;
+      }).join('')}
+      <tr class="total-row">
+        <td class="text-center"></td>
+        <td>ИТОГО / СРЕДНЕЕ</td>
+        <td class="text-center">${avgScore}</td>
+        <td class="text-center">10.0</td>
+        <td class="text-center">${Math.min(100, Math.round(Number(avgScore) * 10))}%</td>
+        <td class="text-center">${totalGoals}</td>
+        <td class="text-center">Гармония: ${harmonyPercent}%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Реестр целей и финансовая декомпозиция</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="goals-th text-center" style="width: 25px;">#</th>
+        <th class="goals-th">Название цели</th>
+        <th class="goals-th">Сфера жизни</th>
+        <th class="goals-th text-center" style="width: 70px;">Приоритет</th>
+        <th class="goals-th text-center" style="width: 70px;">Статус</th>
+        <th class="goals-th text-center" style="width: 60px;">Прогресс</th>
+        <th class="goals-th text-center" style="width: 75px;">Дедлайн</th>
+        <th class="goals-th text-right" style="width: 80px;">Сумма (Br)</th>
+        <th class="goals-th text-right" style="width: 70px;">Сумма ($)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${goals.map((g, idx) => {
+        const amt = Number(g.cost_amount) || 0;
+        const cur = (g.currency || 'BYN').toUpperCase();
+        const byn = cur === 'BYN' ? amt : amt * fxRate;
+        const usd = cur === 'BYN' ? amt / fxRate : amt;
+        const prioMap = { critical: "Критич.", high: "Высокий", medium: "Средний", low: "Низкий" };
+        const statMap = { in_progress: "В работе", achieved: "Готово", draft: "Черновик", archived: "Архив" };
+        const statusHtml = g.status === 'achieved' 
+          ? '<span class="tag tag-green">Готово</span>' 
+          : (g.status === 'in_progress' ? '<span class="tag tag-blue">В работе</span>' : (statMap[g.status] || g.status));
+        return `
+          <tr>
+            <td class="text-center">${idx + 1}</td>
+            <td><strong>${g.title}</strong></td>
+            <td>${spheresMap[g.sphere_id] || 'Сфера'}</td>
+            <td class="text-center">${prioMap[g.priority] || g.priority}</td>
+            <td class="text-center">${statusHtml}</td>
+            <td class="text-center">${g.progress_percent}%</td>
+            <td class="text-center">${g.deadline || '—'}</td>
+            <td class="text-right">${Math.round(byn).toLocaleString('ru-RU')} Br</td>
+            <td class="text-right">$${Math.round(usd).toLocaleString('ru-RU')}</td>
+          </tr>
+        `;
+      }).join('')}
+      <tr class="total-row">
+        <td class="text-center"></td>
+        <td>ИТОГО ПО ВСЕМ ЦЕЛЯМ</td>
+        <td>${totalGoals} целей</td>
+        <td colspan="4" class="text-right" style="color: #64748b;">Суммарный бюджет:</td>
+        <td class="text-right" style="color: #0d9488;">${Math.round(totalByn).toLocaleString('ru-RU')} Br</td>
+        <td class="text-right" style="color: #0d9488;">$${Math.round(totalUsd).toLocaleString('ru-RU')}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Сформировано в системе «Горизонт» • Конфиденциальный аналитический отчет • horizon.app
+  </div>
+</body>
+</html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+
+  setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (e) {}
+  }, 400);
+}
+
+/**
  * Чипсы фильтрации по сферам жизни (Material 3)
  */
 async function renderSpheresFilterBar() {

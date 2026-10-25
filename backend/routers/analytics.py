@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
@@ -335,3 +336,42 @@ def delete_snapshot(
     db.delete(snapshot)
     db.commit()
     return None
+
+
+@router.get(
+    "/analytics/export-pdf",
+    summary="Сформировать и скачать официальный PDF-отчет (GET /api/analytics/export-pdf)",
+    description="Формирует стильный PDF-документ с итогами по колесу баланса, таблицей сфер и реестром целей пользователя с мультивалютным расчетом (Br / USD). Защищен JWT токеном."
+)
+@router.get(
+    "/export-pdf",
+    include_in_schema=False
+)
+def export_pdf_report(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Эндпоинт генерации и отдачи персонального аналитического PDF-отчета.
+    """
+    try:
+        from pdf_service import generate_horizon_pdf_report
+        pdf_bytes = generate_horizon_pdf_report(db=db, user=current_user)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка генерации PDF-отчета: {str(e)}"
+        )
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"Horizon_Report_{current_user.login}_{timestamp}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+

@@ -13,7 +13,8 @@ backend/
 ├── database.py          # Подключение к PostgreSQL через SQLAlchemy, Clean Production автосидер
 ├── models.py            # Реляционные ORM-модели (users, life_spheres, goal_cards, goal_steps, fx)
 ├── schemas.py           # Pydantic-схемы валидации входящих/исходящих данных (DTO)
-├── requirements.txt     # Зависимости проекта (FastAPI, Uvicorn, SQLAlchemy, Psycopg2 и др.)
+├── pdf_service.py       # Сервис генерации корпоративных PDF-отчетов (ReportLab, кириллица, таблицы)
+├── requirements.txt     # Зависимости проекта (FastAPI, Uvicorn, SQLAlchemy, ReportLab и др.)
 ├── README.md            # Руководство разработчика и инструкция по запуску
 └── routers/             # Модульные эндпоинты RESTful API
     ├── __init__.py
@@ -147,10 +148,11 @@ FastAPI автоматически строит и валидирует инте
 * `GET /api/currency/rates` — получение актуального курса USD/BYN с суточным кэшированием.
 * `POST /api/currency/refresh` — принудительный опрос API `api.nbrb.by`.
 
-### 6. Срезы баланса жизни и аналитика (balance_snapshots)
+### 6. Срезы баланса жизни и аналитика (balance_snapshots) & Генерация PDF
 * `POST /api/snapshots` — сохранение текущего среза баланса жизни с автоматическим расчетом индекса гармонии и JSON-словаря баллов.
 * `GET /api/snapshots` — получение истории срезов за период (`month`, `quarter`, `year`, `all`).
 * `GET /api/snapshots/trend` — подготовленные агрегированные ряды для Chart.js (кривая гармонии % и баллы сфер во времени).
+* `GET /api/analytics/export-pdf` — формирование и скачивание официального аналитического PDF-отчета резидента (ReportLab, кириллица, таблицы сфер и целей, мультивалютные бюджеты Br/USD).
 * `DELETE /api/snapshots/{id}` — удаление снимка баланса.
 
 ### 7. Ручной provisioning пользователей (Admin Only)

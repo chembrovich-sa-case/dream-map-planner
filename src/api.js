@@ -634,6 +634,51 @@
       }
       throw new Error("Не удалось удалить срез");
     }
+
+    // ============================================================================
+    // 7. ЭКСПОРТ ОФИЦИАЛЬНОГО PDF-ОТЧЕТА
+    // ============================================================================
+
+    async exportPDFReport() {
+      if (this.isOnline === null) {
+        await this.checkHealth();
+      }
+
+      if (this.isOnline) {
+        const url = `${this.baseUrl}/analytics/export-pdf`;
+        const headers = {};
+        const token = this.authToken || (this.getCurrentUser() ? this.getCurrentUser().email : null);
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const resp = await fetch(url, {
+          method: 'GET',
+          headers
+        });
+
+        if (resp.status === 401) {
+          throw new Error("UNAUTHORIZED");
+        }
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.detail || `Ошибка сервера (${resp.status}): ${resp.statusText}`);
+        }
+
+        const blob = await resp.blob();
+
+        let filename = `Horizon_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+        const disposition = resp.headers.get('Content-Disposition');
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+          const match = disposition.match(/filename="?([^";]+)"?/);
+          if (match && match[1]) filename = match[1];
+        }
+
+        return { blob, filename };
+      }
+
+      throw new Error("BACKEND_OFFLINE");
+    }
   }
 
   // Экспортируем глобальный экземпляр клиента
