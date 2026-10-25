@@ -58,40 +58,63 @@ def init_db():
 
 def seed_initial_data(db: Session):
     """
-    Наполнение БД начальными демо-данными из схемы schema.sql, если таблицы пусты.
+    Инициализация базы данных при первом запуске (Clean Production Mode).
+    По умолчанию создает ТОЛЬКО единственную учетную запись суперпользователя (admin)
+    без добавления демонстрационного контента (чистый закрытый производственный контур).
+    Демонстрационные цели и сферы создаются ТОЛЬКО при установленном флаге SEED_DEMO_DATA=True.
     """
-    from models import User, LifeSphere, GoalCard, GoalStep, ExchangeRateCache, BalanceSnapshot, BalanceSnapshotItem
-    from datetime import date, datetime, timezone, timedelta
+    from models import User
+    from security import get_password_hash
 
-    # 1. Проверяем наличие пользователей
+    # 1. Проверяем наличие пользователей в системе
     if db.query(User).first() is not None:
         return
 
-    print("🌱 Инициализация демонстрационных данных в базе данных Горизонт...")
-
-    # 2. Создаем демо-пользователей (admin и user)
-    admin_id = uuid.UUID("a0000000-0000-0000-0000-000000000000")
-    user_id = uuid.UUID("a0000000-0000-0000-0000-000000000001")
+    admin_login = os.getenv("HORIZONT_ADMIN_USERNAME", "admin")
+    admin_email = os.getenv("HORIZONT_ADMIN_EMAIL", "admin@horizon.app")
+    admin_name = os.getenv("HORIZONT_ADMIN_NAME", "Главный Администратор")
+    admin_pass = os.getenv("HORIZONT_ADMIN_PASSWORD", "admin")
 
     admin = User(
-        id=admin_id,
-        email="admin@horizon.app",
-        password_hash="$2a$12$e8Y5t1R1CgG6n3G9C9a1qOYQ7qf/v6YkP7fWbL2q7dFpP5Z8vK9G6",
-        name="Алексей Администраторов",
+        id=uuid.UUID("a0000000-0000-0000-0000-000000000000"),
+        username=admin_login,
+        email=admin_email,
+        password_hash=get_password_hash(admin_pass),
+        name=admin_name,
         role="admin",
+        is_active=True,
         avatar_url="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80"
     )
 
+    db.add(admin)
+    db.commit()
+    print(f"🔒 [Clean Production Mode] База данных развернута. Создан единственный суперпользователь: логин='{admin_login}', email='{admin_email}', роль='admin'. Демо-контент отсутствует.")
+
+    # Опциональный демо-контент для dev-окружения
+    if os.getenv("SEED_DEMO_DATA", "False").lower() in ("true", "1"):
+        seed_demo_content(db, admin.id)
+
+
+def seed_demo_content(db: Session, admin_id: uuid.UUID):
+    """
+    Опциональное наполнение базы данных демо-сферами, целями и снимками (только при SEED_DEMO_DATA=True).
+    """
+    from models import User, LifeSphere, GoalCard, GoalStep, ExchangeRateCache, BalanceSnapshot, BalanceSnapshotItem
+    from datetime import date, datetime, timezone, timedelta
+    from security import get_password_hash
+
+    user_id = uuid.UUID("a0000000-0000-0000-0000-000000000001")
     regular_user = User(
         id=user_id,
+        username="user",
         email="user@horizon.app",
-        password_hash="$2a$12$e8Y5t1R1CgG6n3G9C9a1qOYQ7qf/v6YkP7fWbL2q7dFpP5Z8vK9G6",
+        password_hash=get_password_hash("user"),
         name="Иван Горизонтов",
         role="user",
+        is_active=True,
         avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
     )
-
-    db.add_all([admin, regular_user])
+    db.add(regular_user)
     db.flush()
 
     # 3. Создаем 6 сфер колеса баланса (для обоих пользователей)

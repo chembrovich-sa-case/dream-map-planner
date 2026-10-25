@@ -213,6 +213,42 @@
     }
 
     // ============================================================================
+    // 1.1. АДМИНИСТРАТИВНОЕ УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (USER PROVISIONING)
+    // ============================================================================
+
+    async getAdminUsers() {
+      const data = await this.request('/admin/users');
+      if (Array.isArray(data)) return data;
+      if (window.MockAPI && typeof window.MockAPI.getAdminUsers === 'function') {
+        return await window.MockAPI.getAdminUsers();
+      }
+      return this.getDemoUsers();
+    }
+
+    async createAdminUser({ username, password, role = "user", name = null, email = null }) {
+      const data = await this.request('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ username, password, role, name, email })
+      });
+      if (data && data.id) return data;
+      if (window.MockAPI && typeof window.MockAPI.createAdminUser === 'function') {
+        return await window.MockAPI.createAdminUser({ username, password, role, name, email });
+      }
+      throw new Error("Не удалось создать пользователя");
+    }
+
+    async deleteAdminUser(userId, deactivateOnly = false) {
+      const data = await this.request(`/admin/users/${userId}?deactivate_only=${Boolean(deactivateOnly)}`, {
+        method: 'DELETE'
+      });
+      if (data && data.success) return data;
+      if (window.MockAPI && typeof window.MockAPI.deleteAdminUser === 'function') {
+        return await window.MockAPI.deleteAdminUser(userId, deactivateOnly);
+      }
+      return { success: true };
+    }
+
+    // ============================================================================
     // 2. СФЕРЫ ЖИЗНИ (КОЛЕСО БАЛАНСА)
     // ============================================================================
 

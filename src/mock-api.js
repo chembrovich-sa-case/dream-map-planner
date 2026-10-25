@@ -724,6 +724,59 @@ window.MockAPI = {
   getDemoUsers() {
     return DEMO_USERS;
   },
+
+  async getAdminUsers() {
+    this.checkAdmin();
+    return DEMO_USERS.map(u => ({
+      ...u,
+      is_active: u.is_active !== undefined ? u.is_active : true,
+      created_at: u.created_at || new Date().toISOString()
+    }));
+  },
+
+  async createAdminUser({ username, password, role = "user", name = null, email = null }) {
+    this.checkAdmin();
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanEmail = (email || `${cleanUsername}@horizon.app`).trim().toLowerCase();
+
+    if (DEMO_USERS.some(u => u.email.toLowerCase() === cleanEmail)) {
+      throw new Error(`Пользователь «${cleanUsername}» уже существует`);
+    }
+
+    const newUser = {
+      id: generateSafeUUID('a'),
+      username: cleanUsername,
+      email: cleanEmail,
+      name: name || username,
+      role: role === 'admin' ? 'admin' : 'user',
+      is_active: true,
+      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      created_at: new Date().toISOString()
+    };
+
+    DEMO_USERS.push(newUser);
+    return newUser;
+  },
+
+  async deleteAdminUser(userId, deactivateOnly = false) {
+    this.checkAdmin();
+    const current = this.getCurrentUser();
+    if (current && current.id === userId) {
+      throw new Error("Нельзя удалить собственный аккаунт администратора");
+    }
+
+    const idx = DEMO_USERS.findIndex(u => u.id === userId);
+    if (idx !== -1) {
+      if (deactivateOnly) {
+        DEMO_USERS[idx].is_active = false;
+        return { success: true, message: "Пользователь заблокирован" };
+      }
+      DEMO_USERS.splice(idx, 1);
+      return { success: true, message: "Пользователь удален" };
+    }
+    return { success: true };
+  },
+
   checkAdmin() {
     const user = this.getCurrentUser();
     if (!user || user.role !== 'admin') {

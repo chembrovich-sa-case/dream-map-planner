@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from database import engine, get_db, init_db
 from schemas import HealthResponse
-from routers import auth, spheres, goals, currency, analytics
+from routers import auth, spheres, goals, currency, analytics, admin
 
 
 @asynccontextmanager
@@ -55,6 +55,10 @@ tags_metadata = [
     {
         "name": "Analytics & Balance Snapshots (История и срезы)",
         "description": "Срезы баланса жизни во времени (balance_snapshots), расчет индекса гармонии и исторические тренды."
+    },
+    {
+        "name": "Admin & User Provisioning (Ручной Provisioning)",
+        "description": "Ручное создание и управление пользователями закрытого контура, доступно строго для роли admin."
     }
 ]
 
@@ -97,6 +101,7 @@ app.include_router(spheres.router)
 app.include_router(goals.router)
 app.include_router(currency.router)
 app.include_router(analytics.router)
+app.include_router(admin.router)
 
 
 # ============================================================================

@@ -30,28 +30,30 @@ class HealthResponse(BaseModel):
 RoleType = Literal["admin", "user", "guest"]
 
 class UserBase(BaseModel):
-    email: EmailStr = Field(..., example="admin@horizon.app")
+    email: str = Field(..., example="admin@horizon.app")
+    username: Optional[str] = Field(None, example="admin")
     name: str = Field(..., min_length=2, max_length=100, example="Алексей Администраторов")
     role: RoleType = Field("user", example="admin")
+    is_active: bool = Field(True, example=True)
     avatar_url: Optional[str] = Field(None, example="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200")
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6, example="SecretPass123!")
+    password: str = Field(..., min_length=4, example="SecretPass123!")
 
 
 class UserResponse(UserBase):
     id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserLogin(BaseModel):
-    email: Optional[str] = Field(None, example="admin@horizon.app")
     username: Optional[str] = Field(None, example="admin")
-    password: Optional[str] = Field("admin", example="admin")
+    email: Optional[str] = Field(None, example="admin@horizon.app")
+    password: str = Field(..., example="admin")
 
 
 class TokenResponse(BaseModel):
@@ -60,8 +62,45 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class UserAdminCreate(BaseModel):
+    username: str = Field(..., min_length=2, max_length=50, example="manager1")
+    password: str = Field(..., min_length=3, max_length=100, example="Secret123")
+    role: RoleType = Field("user", example="user")
+    name: Optional[str] = Field(None, example="Иван Менеджеров")
+    email: Optional[str] = Field(None, example="manager1@horizon.app")
+    avatar_url: Optional[str] = None
+
+
+class UserAdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[RoleType] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+    avatar_url: Optional[str] = None
+
+
+class UserAdminResponse(BaseModel):
+    id: uuid.UUID
+    username: Optional[str] = None
+    email: str
+    name: str
+    role: RoleType
+    is_active: bool = True
+    avatar_url: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MessageResponse(BaseModel):
+    success: bool = True
+    message: str
+
+
 class DemoUserItem(BaseModel):
     id: uuid.UUID
+    username: Optional[str] = None
     name: str
     email: str
     role: RoleType

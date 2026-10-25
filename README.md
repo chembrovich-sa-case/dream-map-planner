@@ -120,16 +120,18 @@ flowchart TD
 Horizont/
 ├── backend/                         # Серверная часть (Python / FastAPI)
 │   ├── routers/                     # Модульные REST-роутеры
+│   │   ├── admin.py                 # Ручной provisioning пользователей (Admin Only CRUD)
 │   │   ├── analytics.py             # Срезы баланса и тренды (balance_snapshots)
-│   │   ├── auth.py                  # Аутентификация, профили и RBAC
+│   │   ├── auth.py                  # Аутентификация, строгая JWT-валидация и RBAC
 │   │   ├── currency.py              # Курсы валют НБРБ и конвертация (BYN ⇄ USD)
 │   │   ├── goals.py                 # Карточки целей, декомпозиция и чек-листы
 │   │   └── spheres.py               # Сферы жизни и радарное колесо баланса
-│   ├── database.py                  # Подключение SQLAlchemy (PostgreSQL/SQLite) + Сидинг
+│   ├── database.py                  # Подключение SQLAlchemy (PostgreSQL/SQLite) + Clean Production сидер
 │   ├── main.py                      # Точка входа FastAPI, CORS, Swagger UI, Health Check
 │   ├── models.py                    # ORM-модели (User, LifeSphere, GoalCard, BalanceSnapshot...)
 │   ├── requirements.txt             # Зависимости Python (FastAPI, SQLAlchemy, Pydantic v2...)
 │   ├── schemas.py                   # Схемы валидации входящих/исходящих данных (DTO)
+│   ├── security.py                  # Хэширование паролей (bcrypt/SHA-256) и выпуск/проверка JWT
 │   └── README.md                    # Инструкция по локальному запуску бэкенда
 ├── database/
 │   └── schema.sql                   # Эталонная реляционная схема PostgreSQL в 3NF (DDL, триггеры, сид)

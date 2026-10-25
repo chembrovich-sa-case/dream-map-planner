@@ -9,14 +9,16 @@
 ```
 backend/
 ├── main.py              # Точка входа приложения FastAPI, CORS, обработка lifespan и /api/health
-├── database.py          # Подключение к PostgreSQL через SQLAlchemy, сессии и авто-сидер данных
+├── security.py          # Хэширование паролей (bcrypt/SHA-256) и выпуск/валидация JWT-токенов
+├── database.py          # Подключение к PostgreSQL через SQLAlchemy, Clean Production автосидер
 ├── models.py            # Реляционные ORM-модели (users, life_spheres, goal_cards, goal_steps, fx)
 ├── schemas.py           # Pydantic-схемы валидации входящих/исходящих данных (DTO)
 ├── requirements.txt     # Зависимости проекта (FastAPI, Uvicorn, SQLAlchemy, Psycopg2 и др.)
 ├── README.md            # Руководство разработчика и инструкция по запуску
 └── routers/             # Модульные эндпоинты RESTful API
     ├── __init__.py
-    ├── auth.py          # Аутентификация, профиль и ролевая модель RBAC (admin / user / guest)
+    ├── auth.py          # Аутентификация, профиль и выпуск JWT (admin / user / guest)
+    ├── admin.py         # Ручной provisioning пользователей (CRUD), доступно строго роли admin
     ├── spheres.py       # Управление сферами жизни и колесом баланса (UC-3)
     ├── goals.py         # Карточки целей, чек-листы и динамический пересчет прогресса (UC-1, UC-2, UC-5)
     ├── currency.py      # Интеграция с официальным API курсов валют Нацбанка РБ (НБРБ)
@@ -150,10 +152,8 @@ FastAPI автоматически строит и валидирует инте
 * `GET /api/snapshots` — получение истории срезов за период (`month`, `quarter`, `year`, `all`).
 * `GET /api/snapshots/trend` — подготовленные агрегированные ряды для Chart.js (кривая гармонии % и баллы сфер во времени).
 * `DELETE /api/snapshots/{id}` — удаление снимка баланса.
-* `POST /api/currency/convert` — конвертация бюджетов целей между BYN и USD.
 
-### 6. Аналитика и Исторические срезы баланса (balance_snapshots)
-* `POST /api/analytics/snapshots` — создание точки фиксации среза колеса баланса в БД с авто-расчетом индекса гармонии.
-* `GET /api/analytics/snapshots` — получение истории замеров за указанный период (`days`).
-* `GET /api/analytics/trend` — готовый временной ряд для построения графиков динамики в Chart.js.
-* `DELETE /api/analytics/snapshots/{id}` — удаление среза баланса.
+### 7. Ручной provisioning пользователей (Admin Only)
+* `GET /api/admin/users` — реестр всех резидентов закрытого контура с ролями и статусами активности.
+* `POST /api/admin/users` — ручное добавление пользователя (логин, пароль, имя, роль `admin` или `user`).
+* `DELETE /api/admin/users/{id}` — удаление или блокировка пользователя (с флагом `deactivate_only=true`). Защищено от самоблокировки.
