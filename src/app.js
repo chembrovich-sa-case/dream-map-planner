@@ -1317,8 +1317,9 @@ async function renderGoalDetail(goalId) {
         </div>
         <h2 class="text-xl font-bold font-heading text-[#202124] dark:text-white">Цель не найдена</h2>
         <p class="text-xs text-[#5F6368] dark:text-[#94A3B8] mt-1 mb-6">Возможно, карточка была удалена или ссылка некорректна.</p>
-        <button onclick="window.closeGoalDetail()" class="google-btn-primary text-xs">
-          ← Вернуться к дашборду
+        <button onclick="window.closeGoalDetail()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A73E8] hover:bg-[#1557B0] text-white font-semibold text-xs shadow-sm transition-all active:scale-95">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>Назад к дашборду</span>
         </button>
       </div>
     `;
@@ -1383,48 +1384,60 @@ async function renderGoalDetail(goalId) {
     `;
 
   container.innerHTML = `
-    <!-- 1. ХЕДЕР ДЕТАЛЬНОЙ СТРАНИЦЫ: Кнопка Назад, Хлебные крошки и Действия -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
-      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+    <!-- 1. ВЕРХНЯЯ ПАНЕЛЬ: Кнопка «Назад», Хлебные крошки и Действия -->
+    <div class="space-y-3 pb-4 border-b border-[#E8EAED] dark:border-[#1F2937]">
+      
+      <!-- Верхний ряд: Кнопка «← Назад» и кнопки действий («Редактировать», «Удалить цель») -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
         <button type="button" 
                 onclick="window.closeGoalDetail()" 
-                class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold shrink-0">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span>Дашборд</span>
+                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-[#1E293B] border border-[#DADCE0] dark:border-[#374151] hover:border-[#1A73E8] dark:hover:border-[#60A5FA] text-[#202124] dark:text-white hover:text-[#1A73E8] dark:hover:text-[#60A5FA] shadow-xs hover:shadow-md font-semibold text-xs sm:text-sm transition-all group shrink-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#1A73E8]/30 min-h-[38px]"
+                title="Вернуться назад к дашборду"
+                aria-label="Назад к дашборду">
+          <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-0.5"></i>
+          <span>Назад</span>
         </button>
 
-        <!-- Хлебные крошки -->
-        <nav class="flex items-center gap-1.5 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium flex-wrap">
-          <a href="#" onclick="window.closeGoalDetail(); return false;" class="hover:text-[#1A73E8] transition-colors">Главная</a>
-          <span>/</span>
-          <span class="inline-flex items-center gap-1 font-semibold" style="color: ${goal.sphere_color};">
-            <span class="w-2 h-2 rounded-full" style="background-color: ${goal.sphere_color};"></span>
-            ${escapeHTML(goal.sphere_title)}
-          </span>
-          <span>/</span>
-          <span class="font-bold text-[#202124] dark:text-white truncate max-w-[200px] sm:max-w-xs">
-            ${escapeHTML(goal.title)}
-          </span>
-        </nav>
-      </div>
-
-      <!-- Действия над целью -->
-      <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
-        ${isAdmin ? `
+        <!-- Действия над целью -->
+        <div class="flex items-center gap-2 shrink-0">
+          ${isAdmin ? `
+            <button type="button" 
+                    onclick="window.openEditGoalModal('${goal.id}')" 
+                    class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#1A73E8] border-[#1A73E8] hover:bg-blue-50/50 dark:hover:bg-blue-950/30 min-h-[38px]">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Редактировать</span>
+            </button>
+          ` : ''}
           <button type="button" 
-                  onclick="window.openEditGoalModal('${goal.id}')" 
-                  class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#1A73E8] border-[#1A73E8]">
-            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-            <span>Редактировать</span>
+                  onclick="window.handleDeleteGoalDetail('${goal.id}')" 
+                  class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#D93025] hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-300 transition-all min-h-[38px]"
+                  title="Удалить карточку цели">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Удалить цель</span>
           </button>
-        ` : ''}
-        <button type="button" 
-                onclick="window.handleDeleteGoalDetail('${goal.id}')" 
-                class="google-btn-outlined py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold text-[#D93025] hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-300 transition-all">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          <span>Удалить цель</span>
-        </button>
+        </div>
       </div>
+
+      <!-- Вспомогательная цепочка пути (Хлебные крошки / Breadcrumbs) сразу под кнопкой возврата -->
+      <nav class="flex items-center gap-1.5 text-xs text-[#5F6368] dark:text-[#94A3B8] font-medium flex-wrap pt-0.5" aria-label="Хлебные крошки">
+        <a href="#" onclick="window.closeGoalDetail(); return false;" class="hover:text-[#1A73E8] dark:hover:text-[#60A5FA] transition-colors flex items-center gap-1">
+          <i data-lucide="home" class="w-3.5 h-3.5 opacity-70"></i>
+          <span>Главная</span>
+        </a>
+        <i data-lucide="chevron-right" class="w-3 h-3 text-[#9AA0A6] dark:text-[#64748B] shrink-0"></i>
+        <a href="#" onclick="window.closeGoalDetail(); window.selectSphereFilter('${goal.sphere_id}'); return false;" 
+           class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-semibold"
+           style="color: ${goal.sphere_color};"
+           title="Перейти к сфере: ${escapeHTML(goal.sphere_title)}">
+          <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${goal.sphere_color};"></span>
+          <span>${escapeHTML(goal.sphere_title)}</span>
+        </a>
+        <i data-lucide="chevron-right" class="w-3 h-3 text-[#9AA0A6] dark:text-[#64748B] shrink-0"></i>
+        <span class="font-bold text-[#202124] dark:text-white truncate max-w-[240px] sm:max-w-md" title="${escapeHTML(goal.title)}">
+          ${escapeHTML(goal.title)}
+        </span>
+      </nav>
+
     </div>
 
     <!-- 2. ДВУХКОЛОНОЧНЫЙ МАКЕТ В СТИЛЕ GOOGLE MATERIAL DESIGN 3 -->
